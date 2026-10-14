@@ -43,16 +43,38 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug -PinsydeVersionCode=${GITHUB_RUN_NUMBER} --no-daemon --stacktrace
 
-      - name: Build the Play Store version (only when the upload key is in GitHub Secrets)
+      # Each key check is its own step, so a failure shows WHICH part is wrong without ever printing a secret.
+      - name: "Key check 1: the key text in GitHub Secrets can be read"
+        if: env.HAS_UPLOAD_KEY == 'true'
+        env:
+          KEY_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+        run: |
+          printf '%s' "$KEY_B64" | tr -d ' \r\n\t' | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "decoded size: $(stat -c %s "$RUNNER_TEMP/upload.jks") bytes"
+
+      - name: "Key check 2: it is the InsydeLive upload key (fingerprint matches)"
+        if: env.HAS_UPLOAD_KEY == 'true'
+        run: |
+          echo "f8a73aa33d4605792e69193e28da997aff5eb20d1d6396ea5c6bf9fd8283e2ee  $RUNNER_TEMP/upload.jks" | sha256sum -c -
+
+      - name: "Key check 3: the password in GitHub Secrets opens the key"
+        if: env.HAS_UPLOAD_KEY == 'true'
+        env:
+          RAW_PW: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          PW=$(printf '%s' "$RAW_PW" | tr -d ' \r\n\t')
+          echo "password length: ${#PW}"
+          keytool -list -keystore "$RUNNER_TEMP/upload.jks" -storetype PKCS12 -storepass "$PW" -alias upload > /dev/null
+
+      - name: Build the Play Store version
         if: env.HAS_UPLOAD_KEY == 'true'
         working-directory: android
         env:
-          KEY_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
-          INSYDE_UPLOAD_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          RAW_PW: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
         run: |
           set -e
           export INSYDE_UPLOAD_KEYSTORE="$RUNNER_TEMP/upload.jks"
-          printf '%s' "$KEY_B64" | tr -d ' \r\n' | base64 -d > "$INSYDE_UPLOAD_KEYSTORE"
+          export INSYDE_UPLOAD_PASSWORD=$(printf '%s' "$RAW_PW" | tr -d ' \r\n\t')
           ./gradlew bundleRelease -PinsydeVersionCode=${GITHUB_RUN_NUMBER} --no-daemon --stacktrace
           rm -f "$INSYDE_UPLOAD_KEYSTORE"
 
