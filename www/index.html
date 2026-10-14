@@ -671,7 +671,14 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
             <button type="button" class="password-toggle" onclick="togglePasswordVisibility('su-password', this)">👁</button>
           </div>
         </div>
-        <div class="field"><label>Date of birth <span style="color:#e5484d;">*</span></label><input class="input" id="su-dob" type="date"></div>
+        <div class="field"><label id="su-dob-label">Date of birth <span style="color:#e5484d;">*</span></label>
+          <div role="group" aria-labelledby="su-dob-label" style="display:grid;grid-template-columns:1fr 1.5fr 1.2fr;gap:8px;">
+            <select class="input" id="su-dob-day" aria-label="Day of birth" onchange="syncSignupDob()"><option value="">Day</option></select>
+            <select class="input" id="su-dob-month" aria-label="Month of birth" onchange="syncSignupDob()"><option value="">Month</option></select>
+            <select class="input" id="su-dob-year" aria-label="Year of birth" onchange="syncSignupDob()"><option value="">Year</option></select>
+          </div>
+          <input type="hidden" id="su-dob">
+        </div>
         <label style="display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--text-dim);">
           <input type="checkbox" id="su-age-confirm" style="margin-top:3px;">
           <span>I confirm that I am 18 years of age or older. <span style="color:#e5484d;">*</span></span>
@@ -5281,10 +5288,7 @@ function go(screen){
     document.getElementById('admin-verified-results').innerHTML = '';
   }
   if (screen === 'admin-compliance-gaps') renderAdminComplianceGapsList();
-  if (screen === 'signup'){
-    const dobInput = document.getElementById('su-dob');
-    if (dobInput) dobInput.max = new Date(Date.now() - 18*365.25*24*60*60*1000).toISOString().slice(0,10);
-  }
+  if (screen === 'signup') setupSignupDob();
   if (screen === 'food-orders') loadFoodOrdersQueue();
   if (screen === 'live-drop-my-requests') renderMyLiveDropRequests();
   if (screen === 'live-drop-fulfill') renderLiveDropQueue();
@@ -5739,6 +5743,29 @@ window.hideCurrencySuggestions = function(listId, searchInputId, hiddenId){
       }
     }
   }
+};
+
+// Date of birth as three drop-downs (Day / Month / Year), approved 14 Oct 2026. Android's calendar opened on
+// the latest allowed year and hid the year list, so people could not find earlier years.
+const SIGNUP_DOB_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function setupSignupDob(){
+  const d = document.getElementById('su-dob-day'), m = document.getElementById('su-dob-month'), y = document.getElementById('su-dob-year');
+  if (!d || !m || !y || y.options.length > 1) return;          // already filled - keep what the person picked
+  const thisYear = new Date().getFullYear();
+  for (let yr = thisYear - 18; yr >= thisYear - 100; yr--) y.add(new Option(String(yr), String(yr)));
+  SIGNUP_DOB_MONTHS.forEach((name, i) => m.add(new Option(name, String(i + 1))));
+  for (let day = 1; day <= 31; day++) d.add(new Option(String(day), String(day)));
+}
+window.syncSignupDob = function(){
+  const d = document.getElementById('su-dob-day'), m = document.getElementById('su-dob-month'), y = document.getElementById('su-dob-year');
+  const hidden = document.getElementById('su-dob');
+  if (!d || !m || !y || !hidden) return;
+  // Only offer days that exist in the chosen month (e.g. no 31 February).
+  const daysInMonth = m.value ? new Date(Number(y.value) || 2000, Number(m.value), 0).getDate() : 31;
+  if (Number(d.value) > daysInMonth) d.value = '';
+  for (const opt of d.options) if (opt.value) opt.hidden = opt.disabled = Number(opt.value) > daysInMonth;
+  hidden.value = (d.value && m.value && y.value)
+    ? `${y.value}-${String(m.value).padStart(2, '0')}-${String(d.value).padStart(2, '0')}` : '';
 };
 
 window.handleSignUp = async function(){
