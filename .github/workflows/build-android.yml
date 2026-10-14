@@ -16,6 +16,9 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      # true once the Play Store upload key has been added under Settings -> Secrets and variables -> Actions
+      HAS_UPLOAD_KEY: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 != '' && secrets.ANDROID_UPLOAD_KEY_PASSWORD != '' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -38,7 +41,20 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug -PinsydeVersionCode=${GITHUB_RUN_NUMBER} --no-daemon --stacktrace
+
+      - name: Build the Play Store version (only when the upload key is in GitHub Secrets)
+        if: env.HAS_UPLOAD_KEY == 'true'
+        working-directory: android
+        env:
+          KEY_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+          INSYDE_UPLOAD_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -e
+          export INSYDE_UPLOAD_KEYSTORE="$RUNNER_TEMP/upload.jks"
+          printf '%s' "$KEY_B64" | tr -d ' \r\n' | base64 -d > "$INSYDE_UPLOAD_KEYSTORE"
+          ./gradlew bundleRelease -PinsydeVersionCode=${GITHUB_RUN_NUMBER} --no-daemon --stacktrace
+          rm -f "$INSYDE_UPLOAD_KEYSTORE"
 
       - name: Name the file
         id: name
@@ -48,6 +64,9 @@ jobs:
           mkdir -p out
           cp android/app/build/outputs/apk/debug/app-debug.apk "out/${FILE}"
           echo "file=${FILE}" >> "$GITHUB_OUTPUT"
+          if [ "$HAS_UPLOAD_KEY" = "true" ]; then
+            cp android/app/build/outputs/bundle/release/app-release.aab "out/InsydeLive-STORE-${VERSION}-code${GITHUB_RUN_NUMBER}.aab"
+          fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Check what is inside the app before publishing it
@@ -64,10 +83,25 @@ jobs:
           echo "All checks passed: app ID, hostname, version ${{ steps.name.outputs.version }}, production database, icon."
           ls -la "$APK"
 
+      - name: Check the Play Store version
+        if: env.HAS_UPLOAD_KEY == 'true'
+        run: |
+          set -e
+          AAB=$(ls out/*.aab)
+          unzip -l "$AAB" | grep -q "base/assets/public/index.html" || { echo "MISSING: app files"; exit 1; }
+          unzip -p "$AAB" base/assets/capacitor.config.json | grep -q '"appId": "com.insydelive.app"' || { echo "WRONG app ID"; exit 1; }
+          unzip -p "$AAB" base/assets/public/index.html | grep -q "bjtialxcvyjdxwurysbv.supabase.co" || { echo "NOT the production database"; exit 1; }
+          if unzip -p "$AAB" base/assets/public/index.html | grep -q "qefslvaqnakxgkmxxlsi"; then echo "DEV database found - stop"; exit 1; fi
+          CERT=$(keytool -printcert -jarfile "$AAB")
+          echo "$CERT" | grep -q "CN=InsydeLive" || { echo "NOT signed with the InsydeLive upload key"; exit 1; }
+          if echo "$CERT" | grep -q "Android Debug"; then echo "Signed with the TEST key - stop"; exit 1; fi
+          echo "Store version OK, signed by:"; echo "$CERT" | grep -E "Owner:|SHA256:"
+          ls -la "$AAB"
+
       - uses: actions/upload-artifact@v5
         with:
           name: InsydeLive-test-app
-          path: out/*.apk
+          path: out/*
           retention-days: 30
 
       - name: Publish on the Releases page
@@ -80,4 +114,5 @@ jobs:
             InsydeLive Android TEST app - for testing only, not the Play Store version.
             On your Android phone: tap the .apk file below, then Open / Install.
             (The first time, Android asks you to allow installs from your browser - allow it for this install.)
-          files: out/*.apk
+            If there is also an InsydeLive-STORE-....aab file: that one is for uploading to Google Play Console only (it does not install on a phone).
+          files: out/*

@@ -10,6 +10,15 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // STORE builds: the upload key comes ONLY from GitHub Secrets at build time (never from this repository).
+        if (System.getenv('INSYDE_UPLOAD_KEYSTORE')) {
+            release {
+                storeFile file(System.getenv('INSYDE_UPLOAD_KEYSTORE'))
+                storePassword System.getenv('INSYDE_UPLOAD_PASSWORD')
+                keyAlias 'upload'
+                keyPassword System.getenv('INSYDE_UPLOAD_PASSWORD')
+            }
+        }
     }
     namespace = "com.insydelive.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -17,7 +26,8 @@ android {
         applicationId "com.insydelive.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        // Google Play needs a higher number for every upload; the build passes the run number in.
+        versionCode((project.findProperty('insydeVersionCode') ?: '1') as Integer)
         versionName "2.4.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -28,6 +38,7 @@ android {
     }
     buildTypes {
         release {
+            if (System.getenv('INSYDE_UPLOAD_KEYSTORE')) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
