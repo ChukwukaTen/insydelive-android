@@ -4327,6 +4327,27 @@ setInterval(async () => {
 // The app version shown in Settings. Must match CACHE_VERSION in sw.js (the release packaging checks this).
 const APP_VERSION = '2.4.3';
 { const v = document.getElementById('app-version-label'); if (v) v.textContent = APP_VERSION; }
+// Phone autofill (14 Oct 2026): Android offered a saved home address ("Home, Wantage") on boxes like Bio,
+// and inside the app that pop-up took the keyboard away after one letter. The phone's saved details only
+// belong on the boxes that already say what they are (sign-in / sign-up email, password, name, phone).
+// Every other typing box - including ones drawn later - is marked "no autofill". Nothing else changes.
+(function(){
+  const SKIP = new Set(['hidden', 'checkbox', 'radio', 'file', 'button', 'submit', 'reset', 'range', 'color', 'image']);
+  const mark = (el) => {
+    if (el.hasAttribute('autocomplete')) return;
+    if (el.tagName === 'INPUT' && SKIP.has((el.getAttribute('type') || 'text').toLowerCase())) return;
+    el.setAttribute('autocomplete', 'off');
+  };
+  const markIn = (root) => {
+    if (!root || root.nodeType !== 1) return;
+    if (root.matches('input, textarea')) mark(root);
+    root.querySelectorAll('input, textarea').forEach(mark);
+  };
+  markIn(document.body);
+  new MutationObserver((changes) => { for (const c of changes) c.addedNodes.forEach(markIn); })
+    .observe(document.body, { childList: true, subtree: true });
+  document.addEventListener('focusin', (e) => { if (e.target && e.target.matches && e.target.matches('input, textarea')) mark(e.target); }, true);
+})();
 const STATUS_PAGE_URL = 'https://status.insydelive.com';
 const PLATFORM_NOTICE_DISMISS_KEY = 'insydelive_notice_dismissed';
 let platformNotice = null;
