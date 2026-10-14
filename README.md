@@ -11,3 +11,8 @@ connected to the PRODUCTION Supabase project.
 
 Updating the web app inside: replace `www/` with the latest production build (without `netlify.toml` and
 `_redirects`), bump `version` in `package.json`, and push.
+
+## Play Store version
+When the two GitHub Secrets `ANDROID_UPLOAD_KEYSTORE_B64` and `ANDROID_UPLOAD_KEY_PASSWORD` are set, every build also makes
+`InsydeLive-STORE-<version>-code<N>.aab` (signed with the InsydeLive upload key) for uploading to Google Play Console.
+The key itself is never stored in this repository. The version code is the build number, so it always goes up.
