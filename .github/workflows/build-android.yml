@@ -1,5 +1,7 @@
 # Builds the InsydeLive Android TEST app every time this repository changes (or when you press "Run workflow").
-# Result: an installable test app (APK) under the run's "Artifacts", called InsydeLive-test-app.
+# Result:
+#   - Releases page: "Test build N" with the installable InsydeLive-test-....apk (open it on the Android phone, tap the file)
+#   - also kept under the run's "Artifacts" for 30 days
 name: Build Android test app
 
 on:
@@ -7,18 +9,21 @@ on:
     branches: [ main ]
   workflow_dispatch: {}
 
+permissions:
+  contents: write   # needed to publish the test build on the Releases page
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -36,13 +41,43 @@ jobs:
           ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Name the file
+        id: name
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          FILE="InsydeLive-test-${VERSION}-build${GITHUB_RUN_NUMBER}.apk"
           mkdir -p out
-          cp android/app/build/outputs/apk/debug/app-debug.apk "out/InsydeLive-test-${VERSION}-build${GITHUB_RUN_NUMBER}.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "out/${FILE}"
+          echo "file=${FILE}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+      - name: Check what is inside the app before publishing it
+        run: |
+          APK="out/${{ steps.name.outputs.file }}"
+          set -e
+          unzip -l "$APK" | grep -q "assets/public/index.html"           || { echo "MISSING: app files"; exit 1; }
+          unzip -l "$APK" | grep -q "assets/public/icons/icon-512.png"   || { echo "MISSING: icon"; exit 1; }
+          unzip -p "$APK" assets/capacitor.config.json | grep -q '"appId": "com.insydelive.app"' || { echo "WRONG app ID"; exit 1; }
+          unzip -p "$APK" assets/capacitor.config.json | grep -q '"hostname": "app.insydelive.com"' || { echo "WRONG hostname"; exit 1; }
+          unzip -p "$APK" assets/public/index.html | grep -q "APP_VERSION = '${{ steps.name.outputs.version }}'" || { echo "WRONG app version inside"; exit 1; }
+          unzip -p "$APK" assets/public/index.html | grep -q "bjtialxcvyjdxwurysbv.supabase.co" || { echo "NOT the production database"; exit 1; }
+          if unzip -p "$APK" assets/public/index.html | grep -q "qefslvaqnakxgkmxxlsi"; then echo "DEV database found - stop"; exit 1; fi
+          echo "All checks passed: app ID, hostname, version ${{ steps.name.outputs.version }}, production database, icon."
+          ls -la "$APK"
+
+      - uses: actions/upload-artifact@v5
         with:
           name: InsydeLive-test-app
           path: out/*.apk
           retention-days: 30
+
+      - name: Publish on the Releases page
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: test-build-${{ github.run_number }}
+          name: "Test build ${{ github.run_number }} (app files v${{ steps.name.outputs.version }})"
+          prerelease: true
+          body: |
+            InsydeLive Android TEST app - for testing only, not the Play Store version.
+            On your Android phone: tap the .apk file below, then Open / Install.
+            (The first time, Android asks you to allow installs from your browser - allow it for this install.)
+          files: out/*.apk
