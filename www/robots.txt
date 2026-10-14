@@ -1,0 +1,19 @@
+# The app itself is not meant to be searched. The public site is https://insydelive.com
+# Link-preview bots are allowed so shared venue and event links show a proper preview.
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: *
+Disallow: /

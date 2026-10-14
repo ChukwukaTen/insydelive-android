@@ -1,0 +1,18 @@
+{
+  "name": "insydelive-android",
+  "version": "2.4.3",
+  "private": true,
+  "description": "InsydeLive Android app (Capacitor shell around the InsydeLive web app, with the app's files built in)",
+  "scripts": {
+    "sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/core": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

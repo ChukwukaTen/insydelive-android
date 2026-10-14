@@ -1,0 +1,48 @@
+# Builds the InsydeLive Android TEST app every time this repository changes (or when you press "Run workflow").
+# Result: an installable test app (APK) under the run's "Artifacts", called InsydeLive-test-app.
+name: Build Android test app
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install Capacitor
+        run: npm ci
+
+      - name: Copy the app files into the Android project
+        run: npx cap sync android
+
+      - name: Build the test app
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Name the file
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk "out/InsydeLive-test-${VERSION}-build${GITHUB_RUN_NUMBER}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: InsydeLive-test-app
+          path: out/*.apk
+          retention-days: 30

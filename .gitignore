@@ -1,0 +1,12 @@
+node_modules/
+out/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.iml
+.DS_Store
+# never commit a real (Play Store) signing key
+*.jks
+release.keystore
