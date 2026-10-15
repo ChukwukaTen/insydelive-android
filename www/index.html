@@ -10359,7 +10359,7 @@ function openPublicPageFromLink(){
   } catch (_) {}
 }
 
-const NATIVE_BLOCKED_PURPOSES = ['event_listing_fee', 'gathering_creation_fee', 'advertising_request'];
+const NATIVE_BLOCKED_PURPOSES = ['event_listing_fee', 'gathering_creation_fee', 'advertising_request', 'live_drop'];   // live_drop approved 15 Oct
 const NATIVE_NOT_AVAILABLE_MSG = "This option isn't available in the Android app.";
 function nativeFeeBlocked(){
   if (!IS_NATIVE_APP) return false;
@@ -16794,6 +16794,7 @@ window.openLiveDropWatch = async function(requestId){
 
 /* ---------- Requesting: "peek inside" a venue you're not at ---------- */
 window.openLiveDropRequestScreen = async function(){
+  if (state.featureFlags.live_drop_payments && nativeFeeBlocked()) return;   // paid Live Drop is not sold in the Android app
   const venue = state.currentVenue;
   if (!venue) return;
   state.liveDropTargetVenue = { id: venue.id, name: venue.name };
@@ -16847,6 +16848,7 @@ window.closeLiveDropRequestScreen = function(){
 };
 
 window.submitLiveDropRequest = async function(){
+  if (state.featureFlags.live_drop_payments && nativeFeeBlocked()) return;
   if (!navigator.onLine){ toast('Connect to the internet to send a request'); return; }
   const target = state.liveDropTargetVenue;
   if (!target) return;
