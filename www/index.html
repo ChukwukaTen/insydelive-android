@@ -10515,8 +10515,11 @@ window.renderBlockedAccounts = async function(){
   if (!list) return;
   if (!navigator.onLine){ list.innerHTML = '<p class="small">Connect to the internet to see this.</p>'; return; }
   list.innerHTML = loadingBlockHtml('Loading…');
-  const { data, error } = await supabase.from('user_blocks').select('blocked_id, created_at').order('created_at', { ascending: false });
+  const { data: rows, error } = await supabase.rpc('my_block_list');
   if (error){ list.innerHTML = errorBlockHtml('Could not load your blocked accounts.', 'renderBlockedAccounts()'); return; }
+  const data = (rows || []).filter(r => r.i_blocked).map(r => ({ blocked_id: r.user_id, created_at: r.created_at }))
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  state.blockList = new Map((rows || []).map(r => [r.user_id, !!r.i_blocked]));
   if (!data || !data.length){ list.innerHTML = '<p class="small" style="color:var(--text-faint);text-align:center;margin-top:18px;">You haven\'t blocked anyone.</p>'; return; }
   const { data: profs } = await supabase.from('profiles_public').select('id, username, full_name, avatar_url').in('id', data.map(b => b.blocked_id));
   const byId = Object.fromEntries((profs || []).map(p => [p.id, p]));
@@ -10555,7 +10558,7 @@ window.renderAdminReports = async function(){
   if (!list) return;
   if (!navigator.onLine){ list.innerHTML = '<p class="small">Connect to the internet to see reports.</p>'; return; }
   list.innerHTML = loadingBlockHtml('Loading…');
-  const { data, error } = await supabase.from('content_reports')
+  const { data, error } = await supabase.from('safety_reports')
     .select('id, reporter_id, target_type, target_id, reported_user_id, reason, details, content_snapshot, status, created_at')
     .eq('status', adminReportsFilter).order('created_at', { ascending: false }).limit(100);
   if (error){ list.innerHTML = errorBlockHtml('Could not load reports — ' + (error.message || ''), 'renderAdminReports()'); return; }
@@ -10588,7 +10591,7 @@ window.renderAdminReports = async function(){
 };
 window.adminSetReportStatus = async function(targetType, targetId, status){
   if (!navigator.onLine){ toast('Connect to the internet to do this'); return; }
-  const { data, error } = await supabase.from('content_reports').update({ status })
+  const { data, error } = await supabase.from('safety_reports').update({ status })
     .eq('target_type', targetType).eq('target_id', targetId).eq('status', 'open').select('id');
   if (error || !data || !data.length){ toast('Not saved — the database did not allow this change.'); return; }
   toast(status === 'reviewed' ? 'Marked as reviewed' : 'Dismissed');
