@@ -9823,7 +9823,8 @@ const NOTIF_TAP_TARGETS = {
   live_drop_requested: true, moment_tag: true, promoter_code: true, venue_alert: true, sponsored_push: true, event_checkin_reminder: true,
   watched_person_confirmed_fine: true, auto_ping: true, event_upcoming_reminder: true, gathering_upcoming_reminder: true, going_out_upcoming_reminder: true, gathering_host_broadcast: true, entity_post_notify: true, profile_post_notify: true,
   new_food_order: true, food_order_placed: true, food_order_ready: true, food_order_rejected: true, food_order_completed: true, receipt_generation_failed: true, food_order_cancelled: true, waiter_tip_received: true, gift_sent: true, gift_received: true, gift_delivered: true, venue_gift_payment: true, event_ticket_sold: true,
-  gathering_door_helper_added: true, venue_domain_request: true, venue_domain_status_changed: true
+  gathering_door_helper_added: true, venue_domain_request: true, venue_domain_status_changed: true,
+  safety_report_submitted: true
 };
 
 window.handleNotificationTap = async function(type, data){
@@ -9992,6 +9993,9 @@ window.handleNotificationTap = async function(type, data){
   } else if (type === 'advertising_request_pending'){
     go('admin-advertising-requests');
     renderAdminAdvertisingRequests();
+  } else if (type === 'safety_report_submitted'){
+    go('admin-reports');
+    setAdminReportsFilter('open');
   } else if (type === 'app_feedback_submitted'){
     // Clear any category filter left over from a previous visit —
     // otherwise the specific item this notification points to could
@@ -10517,14 +10521,14 @@ window.renderBlockedAccounts = async function(){
   list.innerHTML = loadingBlockHtml('Loading…');
   const { data: rows, error } = await supabase.rpc('my_block_list');
   if (error){ list.innerHTML = errorBlockHtml('Could not load your blocked accounts.', 'renderBlockedAccounts()'); return; }
-  const data = (rows || []).filter(r => r.i_blocked).map(r => ({ blocked_id: r.user_id, created_at: r.created_at }))
+  // names come with the block list itself - the normal profile lookup hides blocked people
+  const data = (rows || []).filter(r => r.i_blocked).map(r => ({ blocked_id: r.user_id, created_at: r.created_at,
+      p: { username: r.username, full_name: r.full_name, avatar_url: r.avatar_url } }))
     .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   state.blockList = new Map((rows || []).map(r => [r.user_id, !!r.i_blocked]));
   if (!data || !data.length){ list.innerHTML = '<p class="small" style="color:var(--text-faint);text-align:center;margin-top:18px;">You haven\'t blocked anyone.</p>'; return; }
-  const { data: profs } = await supabase.from('profiles_public').select('id, username, full_name, avatar_url').in('id', data.map(b => b.blocked_id));
-  const byId = Object.fromEntries((profs || []).map(p => [p.id, p]));
   list.innerHTML = data.map(b => {
-    const p = byId[b.blocked_id] || {};
+    const p = b.p || {};
     return `<div class="card" style="display:flex;align-items:center;gap:12px;padding:12px;">
       ${avatarHtml(p.avatar_url, p.full_name || p.username, 'width:40px;height:40px;font-size:15px;flex-shrink:0;')}
       <div style="flex:1;min-width:0;"><div style="font-weight:600;">${escapeHtml(p.full_name || p.username || 'Former member')}</div>
