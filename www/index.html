@@ -443,6 +443,13 @@ textarea.input{resize:vertical;min-height:70px;}
 .password-toggle{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-faint);font-size:16px;padding:8px;cursor:pointer;}
 
 /* ---------- Modal ---------- */
+.menu-row{display:flex;align-items:center;gap:12px;width:100%;padding:14px 4px;background:none;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:15px;text-align:left;cursor:pointer;}
+.menu-row:last-child{border-bottom:none;}
+.menu-row.danger{color:var(--danger);}
+.menu-row.muted{justify-content:center;color:var(--text-dim);}
+.radio-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--border);border-radius:12px;background:var(--bg-card);font-size:14px;cursor:pointer;}
+.radio-row input{accent-color:var(--gold);width:18px;height:18px;margin:0;flex:0 0 auto;}
+.radio-row:has(input:checked){border-color:var(--gold);}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:70;display:none;align-items:flex-end;justify-content:center;}
 .modal-overlay.show{display:flex;}
 @media (min-width:768px){ .modal-overlay{align-items:center;} }
@@ -1729,7 +1736,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
 
   <!-- ============ CHAT ============ -->
   <section class="screen" id="screen-chat" style="padding-top:0;">
-    <div class="topbar"><button class="icon-btn" onclick="closeChatScreen()" aria-label="Back">←</button><span class="brand" id="chat-title">Chat</span><span style="width:38px;"></span></div>
+    <div class="topbar"><button class="icon-btn" onclick="closeChatScreen()" aria-label="Back">←</button><span class="brand" id="chat-title">Chat</span><button class="icon-btn" title="More" aria-label="More options" onclick="openChatSafetyMenu()">⋯</button></div>
     <div class="chat-messages" id="chat-messages"></div>
     <div class="chat-input-row">
       <input class="input" id="chat-message-input" placeholder="Message..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();sendChatMessage();}">
@@ -2058,6 +2065,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
             <label class="switch"><input type="checkbox" id="privacy-analytics-switch" onchange="toggleAnalyticsConsent(this.checked)" aria-label="Analytics cookies"><span class="track"><span class="thumb"></span></span></label>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="requestDataExport()">Request data export</button>
+          <button class="btn btn-secondary btn-sm" onclick="go('blocked-accounts')">Blocked accounts</button>
           <button class="btn btn-danger btn-sm" onclick="deleteMyAccount()">Delete my account</button>
         </div>
 
@@ -2120,6 +2128,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
           <button class="btn btn-secondary btn-sm" onclick="go('admin-organizer-applications')">Review organizer applications</button>
           <button class="btn btn-secondary btn-sm" onclick="go('admin-venue-applications')">Review venue applications</button>
           <button class="btn btn-secondary btn-sm" onclick="go('admin-manage-admins')">Manage admins</button>
+          <button class="btn btn-secondary btn-sm" onclick="go('admin-reports')">Reports (posts, comments, people)</button>
           <button class="btn btn-secondary btn-sm" onclick="go('admin-notification-reports')">Notification reports</button>
           <button class="btn btn-secondary btn-sm" onclick="go('admin-deleted-accounts')">Deleted accounts</button>
           <button class="btn btn-secondary btn-sm" onclick="go('admin-deactivated-entities')">Deactivated venues/organizers <span id="admin-deactivated-count-badge"></span></button>
@@ -2390,7 +2399,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
     <div class="topbar">
       <button class="icon-btn" onclick="go(state.userProfileReturnScreen || 'explore')" aria-label="Back">←</button>
       <span class="brand" id="up-header-username">Profile</span>
-      <button class="icon-btn" title="Share" aria-label="Share" onclick="shareUserProfile(state.viewingProfileData?.username)">↗</button>
+      <button class="icon-btn" title="More" aria-label="More options" onclick="openProfileSafetyMenu()">⋯</button>
     </div>
     <div class="content">
       <div class="stack">
@@ -2715,6 +2724,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
 
         <h2>4. Conduct</h2>
         <p class="small">Don't harass, threaten, or impersonate anyone; don't use the app to facilitate anything illegal; don't attempt to access another user's account or scrape the platform; don't submit fraudulent, misleading, or illegal content in an advertising request. We can suspend or remove accounts that violate this, and may withhold or reverse a pending payout where we reasonably suspect fraud, abuse, or a violation of these terms.</p>
+        <p class="small">Don't post or send content that is hateful, harassing, sexually explicit, violent or threatening, or that promotes illegal drugs or dangerous activity. You can report content or accounts from the ⋯ menu, and block anyone you don't want to hear from. We review reports and may remove content or suspend accounts that break these rules.</p>
 
         <h2>5. Payments and purchases</h2>
         <p class="small">The following purchases involve real payment, processed by Stripe or Paystack depending on the currency involved. InsydeLive itself never sees or stores your full card number or bank login details — that's handled entirely by our payment processors.</p>
@@ -2762,12 +2772,13 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
     <div class="topbar"><button class="icon-btn" onclick="goBackFromLegal()" aria-label="Back">←</button><span class="brand">Privacy Policy</span><span style="width:38px;"></span></div>
     <div class="content content--noNav">
       <div class="stack">
-        <p class="small" style="color:var(--text-faint);">Version 2.1 · Last updated <span class="legal-updated">14 October 2026</span></p>
+        <p class="small" style="color:var(--text-faint);">Version 2.2 · Last updated <span class="legal-updated">15 October 2026</span></p>
         <h2>Who we are</h2>
         <p class="small">InsydeLive is run by InsydeLive Limited (company number 17380805), Suite Ra01, 195-197 Wood Street, Wood Street, London, England, E17 3NU. We are the data controller for the personal data described in this policy. Contact us at <a href="mailto:support@insydelive.com" style="color:var(--gold);text-decoration:underline;">support@insydelive.com</a>.</p>
 
         <h2>What we collect</h2>
         <p class="small">Account info you provide directly: name, username, email, country, phone number (optional). Profile details you choose to add: bio, vibe, interests, photo. Activity you generate: venue check-ins, pass requests, gifts sent/received, who you follow, gatherings you host or attend. Optional safety info: an emergency contact and notes, stored separately from your public profile. Technical info: your IP address and device/browser type (needed to deliver the app, keep it secure and send push notifications), error reports if something goes wrong in the app, and cookie consent choices — see our separate <a href="javascript:void(0)" onclick="go('cookies')" style="color:var(--gold);text-decoration:underline;">Cookie Policy</a>. If door staff or an admin uses the built-in camera scanner to check someone in, the camera feed is processed entirely on that device to read the QR code — it's never transmitted to us or stored anywhere. If you delete your account, you can optionally tell us why — this is entirely optional, seen only by InsydeLive administrators, and used only to understand why people leave.</p>
+        <p class="small">If you report content or an account, we keep the report (what was reported, the reason and any details you add) so our team can review it; the person you report isn't told who reported them. If you block someone, we keep a record of the block so it can be applied.</p>
 
         <h2>Payment and financial information</h2>
         <p class="small">If you make a purchase — a ticket, a gift, a gathering fee, a cash gift, or an advertising request — that payment is handled entirely by our payment processors, Stripe or Paystack, depending on the currency involved. InsydeLive does not collect or store your full card number, card expiry, CVC, or online banking login details at any point; those go directly to our payment processor's own secure checkout, never through InsydeLive's own servers.</p>
@@ -2860,6 +2871,53 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
         <h2>Contact</h2>
         <p class="small">Questions about this policy: <strong>legal@insydelive.com</strong></p>
         <p class="small" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);color:var(--text-faint);font-size:12px;">InsydeLive Limited · Registered in England and Wales · Company number 17380805 · Registered office: Suite Ra01, 195-197 Wood Street, Wood Street, London, England, E17 3NU</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DELETE ACCOUNT (public page for Google Play: app.insydelive.com/?page=delete-account) ============ -->
+  <section class="screen" id="screen-delete-account">
+    <div class="topbar"><button class="icon-btn" onclick="go(state.session ? 'settings' : 'welcome')" aria-label="Back">←</button><span class="brand">⚡ InsydeLive</span><span style="width:38px;"></span></div>
+    <div class="content content--noNav">
+      <div class="stack">
+        <h2 style="margin:0;">Delete your InsydeLive account</h2>
+        <p class="small">You can delete your account at any time, in the InsydeLive app or at app.insydelive.com:</p>
+        <ol class="small" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;">
+          <li>Sign in.</li>
+          <li>Go to <strong>Settings → Privacy &amp; data</strong>.</li>
+          <li>Tap <strong>Delete my account</strong> and confirm with your password.</li>
+        </ol>
+        <p class="small">Your account is deleted permanently after 72 hours. Sign in again within those 72 hours if you change your mind.</p>
+        <p class="small"><strong>Can't sign in?</strong> Email <a href="mailto:support@insydelive.com?subject=Delete%20my%20account" style="color:var(--gold);">support@insydelive.com</a> from the email address on your account, with the subject "Delete my account". We'll reply within 30 days.</p>
+        <p class="small"><strong>What we keep:</strong> some records, such as payment, payout and consent records, are kept for up to 6 years after the end of the financial year they relate to, because UK law requires it. Everything else is removed. See our Privacy Policy for details.</p>
+        <button class="btn btn-secondary btn-sm" onclick="go('privacy')">Read the Privacy Policy</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BLOCKED ACCOUNTS ============ -->
+  <section class="screen" id="screen-blocked-accounts">
+    <div class="topbar"><button class="icon-btn" onclick="go('settings')" aria-label="Back">←</button><span class="brand">Blocked accounts</span><span style="width:38px;"></span></div>
+    <div class="content content--noNav">
+      <div class="stack">
+        <p class="small">People you've blocked can't see your profile, posts or moments, or message you.</p>
+        <div class="stack" id="blocked-accounts-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ADMIN: REPORTS ============ -->
+  <section class="screen" id="screen-admin-reports">
+    <div class="topbar"><button class="icon-btn" onclick="go('settings')" aria-label="Back">←</button><span class="brand">Reports</span><button class="icon-btn" onclick="renderAdminReports()" aria-label="Refresh">↻</button></div>
+    <div class="content content--noNav">
+      <div class="stack">
+        <div class="chip-row" id="admin-reports-filter" style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="chip-toggle active" data-status="open" onclick="setAdminReportsFilter('open')">Open</button>
+          <button class="chip-toggle" data-status="reviewed" onclick="setAdminReportsFilter('reviewed')">Reviewed</button>
+          <button class="chip-toggle" data-status="dismissed" onclick="setAdminReportsFilter('dismissed')">Dismissed</button>
+          <button class="chip-toggle" data-status="removed" onclick="setAdminReportsFilter('removed')">Removed</button>
+        </div>
+        <div class="stack" id="admin-reports-list"></div>
       </div>
     </div>
   </section>
@@ -3565,6 +3623,43 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
   </div>
 
   <!-- ============ Receipt / payment detail (shared by My receipts and Who paid you) ============ -->
+  <!-- ============ Report / Block (approved 15 Oct 2026) ============ -->
+  <div class="modal-overlay" id="safetyMenuModal" onclick="if(event.target===this) closeSafetyModals()">
+    <div class="modal-sheet" style="padding-top:10px;" id="safety-menu-rows"></div>
+  </div>
+  <div class="modal-overlay" id="reportModal" onclick="if(event.target===this) closeSafetyModals()">
+    <div class="modal-sheet">
+      <h2 style="margin:0;" id="report-title">Report</h2>
+      <p class="small" id="report-subtitle">What's wrong with it?</p>
+      <div class="stack" style="gap:8px;" id="report-reasons" onchange="document.getElementById('report-error').style.display='none'">
+        <label class="radio-row"><input type="radio" name="report-reason" value="spam"> Spam or scam</label>
+        <label class="radio-row"><input type="radio" name="report-reason" value="harassment"> Harassment, bullying or hate</label>
+        <label class="radio-row"><input type="radio" name="report-reason" value="sexual"> Nudity or sexual content</label>
+        <label class="radio-row"><input type="radio" name="report-reason" value="violence"> Violence, threats or dangerous behaviour</label>
+        <label class="radio-row"><input type="radio" name="report-reason" value="other"> Something else</label>
+      </div>
+      <div class="field"><label for="report-details">Details (optional)</label><textarea class="input" id="report-details" maxlength="500" placeholder="Anything that helps us understand"></textarea></div>
+      <p class="error-text" id="report-error" style="display:none;"></p>
+      <button class="btn btn-primary" id="report-send-btn" onclick="submitReport()">Send report</button>
+      <button class="btn btn-ghost" onclick="closeSafetyModals()">Cancel</button>
+    </div>
+  </div>
+  <div class="modal-overlay" id="blockModal" onclick="if(event.target===this) closeSafetyModals()">
+    <div class="modal-sheet">
+      <h2 style="margin:0;" id="block-title">Block?</h2>
+      <ul class="small" style="padding-left:18px;display:flex;flex-direction:column;gap:6px;">
+        <li>They won't be able to see your profile, posts or moments, or message you.</li>
+        <li>You won't see theirs.</li>
+        <li>If you follow each other, you'll both stop following.</li>
+        <li>They aren't told that you blocked them.</li>
+      </ul>
+      <p class="small">You can unblock them at any time in Settings → Privacy &amp; data → Blocked accounts.</p>
+      <label style="display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text-dim);"><input type="checkbox" id="block-also-report"> <span id="block-also-report-label">Also report them</span></label>
+      <button class="btn btn-danger" id="block-confirm-btn" onclick="confirmBlock()">Block</button>
+      <button class="btn btn-ghost" onclick="closeSafetyModals()">Cancel</button>
+    </div>
+  </div>
+
   <!-- ============ Delete account: password re-verification ============ -->
   <div class="modal-overlay" id="deleteAccountPasswordModal">
     <div class="modal-sheet">
@@ -4018,6 +4113,9 @@ const VAPID_PUBLIC_KEY = 'BFILS8klARkrlwEz_dwv2LwAizkzd8WiBPe80eF5UuK6Y9UoAPXMM5
 // the page moves to the checkout, so a tap during that pause is ignored too; on any error it lifts at once.
 let paymentStartInFlight = false;
 async function invokePaymentSession(options){
+  if (IS_NATIVE_APP && NATIVE_BLOCKED_PURPOSES.includes(options?.body?.purpose)){
+    return { data: null, error: { message: NATIVE_NOT_AVAILABLE_MSG } };   // backstop - the buttons are already guarded
+  }
   if (paymentStartInFlight){
     return { data: null, error: { message: 'Checkout is already opening — one moment' } };
   }
@@ -5310,6 +5408,8 @@ function go(screen){
   }
   if (screen === 'admin-compliance-gaps') renderAdminComplianceGapsList();
   if (screen === 'signup') setupSignupDob();
+  if (screen === 'blocked-accounts') renderBlockedAccounts();
+  if (screen === 'admin-reports') renderAdminReports();
   if (screen === 'food-orders') loadFoodOrdersQueue();
   if (screen === 'live-drop-my-requests') renderMyLiveDropRequests();
   if (screen === 'live-drop-fulfill') renderLiveDropQueue();
@@ -7127,7 +7227,7 @@ async function hydrateReposts(rawReposts){
   // Drop reposts whose target no longer resolves (deleted, deactivated,
   // or a going-out session that's since closed) rather than rendering
   // a broken card pointing at nothing.
-  }).filter(r =>
+  }).filter(r => !isBlockedUser(r.userId)).filter(r =>
     (r.targetType === 'venue' && r.venue) ||
     (r.targetType === 'event' && r.event) ||
     (r.targetType === 'going_out_session' && r.session)
@@ -7180,6 +7280,7 @@ function repostCardHtml(r, context){
       <div style="display:flex;gap:6px;margin-top:8px;align-items:center;">
         ${reactionRow}
         <button class="btn-sm btn-ghost" onclick="toggleRepostComments(${r.repostId})">💬${commentState.count ? ' ' + commentState.count : ''}</button>
+        ${safetyBtn('repost', r.repostId, r.userId, r.username === 'someone' ? null : r.username, 'margin-left:auto;')}
       </div>
       ${Object.values(r.reactionCounts || {}).some(c => c > 0) ? `<p class="small" style="cursor:pointer;opacity:0.7;margin:2px 0 0;" onclick="openReactedByModal('repost_reactions', 'repost_id', ${r.repostId})">See who reacted</p>` : ''}
       <div id="repost-comments-${r.repostId}" style="display:none;margin-top:8px;"></div>
@@ -7273,7 +7374,8 @@ function renderRepostCommentsPanel(repostId){
       ${(s.comments || []).map(c => `
         <div style="display:flex;gap:6px;align-items:flex-start;">
           ${avatarHtml(c.avatar_url, c.username, 'width:22px;height:22px;font-size:10px;flex-shrink:0;')}
-          <p class="small" style="margin:0;"><strong>@${escapeHtml(c.username || 'someone')}</strong> ${escapeHtml(c.content)}</p>
+          <p class="small" style="margin:0;flex:1;min-width:0;"><strong>@${escapeHtml(c.username || 'someone')}</strong> ${escapeHtml(c.content)}</p>
+          ${safetyBtn('repost_comment', c.id, c.user_id, c.username)}
         </div>
       `).join('') || '<p class="small" style="color:var(--text-faint);">No comments yet.</p>'}
       <div style="display:flex;gap:6px;margin-top:4px;">
@@ -7314,7 +7416,7 @@ async function loadRepostComments(repostId){
     profileById = Object.fromEntries((profs || []).map(p => [p.id, p]));
   }
 
-  s.comments = (data || []).map(c => ({
+  s.comments = (data || []).filter(c => !isBlockedUser(c.user_id)).map(c => ({
     ...c,
     username: profileById[c.user_id]?.username,
     avatar_url: profileById[c.user_id]?.avatar_url
@@ -7899,6 +8001,7 @@ function renderContextMomentsRow(containerId){
           ${Object.entries(REACTION_EMOJI).map(([type, emoji]) => `
             <button class="chip-toggle ${mine === type ? 'active' : ''}" style="padding:2px 8px;font-size:12px;" onclick="reactToContextMoment('${m.id}','${type}')">${emoji} ${counts[type] || ''}</button>
           `).join('')}
+          ${safetyBtn('moment', m.id, m.user_id, m.profiles_public?.username)}
         </div>
         ${Object.values(counts).some(c => c > 0) ? `<p class="small" style="cursor:pointer;opacity:0.7;margin:4px 0 0;" onclick="openReactedByModal('moment_reactions', 'moment_id', '${m.id}')">See who reacted</p>` : ''}
       </div>
@@ -8401,6 +8504,7 @@ function renderMomentsRow(){
             <button class="reaction-btn ${mine === type ? 'active' : ''}" onclick="reactToMoment('${m.id}','${type}')">${REACTION_EMOJI[type]}${counts[type] ? ' ' + counts[type] : ''}</button>
           `).join('')}
           <button class="moment-share-btn" title="Share" onclick="shareMoment('${m.id}')">↗</button>
+          ${safetyBtn('moment', m.id, m.user_id, m.profiles_public?.username)}
         </div>
         ${Object.values(counts).some(c => c > 0) ? `<p class="small" style="cursor:pointer;opacity:0.7;margin:2px 0 0;" onclick="openReactedByModal('moment_reactions', 'moment_id', '${m.id}')">See who reacted</p>` : ''}
         ${isMine ? `<button class="btn-sm btn-ghost" style="width:100%;margin-top:4px;padding:4px;font-size:11px;" onclick="openSeenByModal('${m.id}')">👁 ${viewCount ? `Seen by ${viewCount}` : 'No views yet'}</button>` : ''}
@@ -10234,6 +10338,271 @@ window.notifActionTogglePref = function(){
   if (id) deleteOneNotification(id);
 };
 
+/* ============================================================
+   Google Play round (approved 15 Oct 2026)
+   - Public links for the store listing: app.insydelive.com/?page=privacy (also terms, cookies,
+     payouts-terms, delete-account) open that page directly, signed in or not.
+   - Report and Block (mock-ups B-F). The rules are enforced by the database (step 37); the app also hides
+     blocked people in lists that come from server feed functions.
+   - Android app only: event listing fees, gathering creation fees and advertising requests are not sold
+     inside the app (Google Play payments policy). Organisers use app.insydelive.com for those.
+   ============================================================ */
+const PUBLIC_PAGES = ['privacy', 'terms', 'cookies', 'payouts-terms', 'delete-account'];
+function openPublicPageFromLink(){
+  const page = new URLSearchParams(window.location.search).get('page');
+  if (!page || !PUBLIC_PAGES.includes(page)) return;
+  go(page);
+  try {   // take ?page= out of the address so a refresh or the next screen doesn't jump back here
+    const url = new URL(window.location.href);
+    url.searchParams.delete('page');
+    history.replaceState(history.state, '', url.pathname + (url.search || '') + url.hash);
+  } catch (_) {}
+}
+
+const NATIVE_BLOCKED_PURPOSES = ['event_listing_fee', 'gathering_creation_fee', 'advertising_request'];
+const NATIVE_NOT_AVAILABLE_MSG = "This option isn't available in the Android app.";
+function nativeFeeBlocked(){
+  if (!IS_NATIVE_APP) return false;
+  toast(NATIVE_NOT_AVAILABLE_MSG, 3500);
+  return true;
+}
+
+// ---- block list: userId -> true (I blocked them) / false (they blocked me) ----
+state.blockList = new Map();
+async function loadBlockList(){
+  if (!state.session || !navigator.onLine) return;
+  const { data, error } = await supabase.rpc('my_block_list');
+  if (error){ console.warn('my_block_list failed:', error.message); return; }
+  state.blockList = new Map((data || []).map(r => [r.user_id, !!r.i_blocked]));
+}
+function isBlockedUser(userId){ return !!userId && state.blockList.has(userId); }
+
+// ---- the ⋯ button: shown on other people's things only ----
+const safetyTargets = {};
+const SAFETY_LABELS = { profile: 'account', profile_post: 'post', profile_post_comment: 'comment', repost: 'repost',
+  repost_comment: 'comment', entity_post: 'post', entity_post_comment: 'comment', moment: 'moment', message: 'message' };
+function safetyBtn(type, id, userId, username, extraStyle){
+  if (!state.session || id === null || id === undefined) return '';
+  if (userId && userId === state.session.user.id) return '';
+  const key = type + ':' + id;
+  safetyTargets[key] = { type, id: String(id), userId: userId || null, username: username || null };
+  return `<button class="icon-action" style="${extraStyle || ''}" title="More" aria-label="More options" onclick="event.stopPropagation(); openSafetyMenu('${key}')">⋯</button>`;
+}
+function safetyName(t){ return t.username ? '@' + t.username : 'this person'; }
+window.closeSafetyModals = function(){
+  ['safetyMenuModal', 'reportModal', 'blockModal'].forEach(id => document.getElementById(id)?.classList.remove('show'));
+};
+function showSafetyMenu(rows){
+  document.getElementById('safety-menu-rows').innerHTML = rows.join('') +
+    '<button class="menu-row muted" onclick="closeSafetyModals()">Cancel</button>';
+  document.getElementById('safetyMenuModal').classList.add('show');
+}
+function menuRowsFor(t, extraRows){
+  const rows = [...(extraRows || [])];
+  rows.push(`<button class="menu-row" onclick="openReportModal('${t.type}:${t.id}')">🚩 Report this ${SAFETY_LABELS[t.type]}</button>`);
+  if (t.userId) rows.push(`<button class="menu-row danger" onclick="openBlockModal('${t.userId}')">🚫 Block ${escapeHtml(safetyName(t))}</button>`);
+  return rows;
+}
+window.openSafetyMenu = function(key){
+  const t = safetyTargets[key];
+  if (!t) return;
+  showSafetyMenu(menuRowsFor(t));
+};
+window.openProfileSafetyMenu = function(){
+  const p = state.viewingProfileData;
+  if (!p) return;
+  const share = `<button class="menu-row" onclick="closeSafetyModals(); shareUserProfile(state.viewingProfileData?.username)">↗ Share profile</button>`;
+  if (!state.session){ showSafetyMenu([share]); return; }
+  const key = 'profile:' + p.id;
+  safetyTargets[key] = { type: 'profile', id: p.id, userId: p.id, username: p.username };
+  showSafetyMenu(menuRowsFor(safetyTargets[key], [share]));
+};
+window.openChatSafetyMenu = function(){
+  const other = state.currentConversationOtherUser;
+  if (!other?.id) return;
+  const key = 'profile:' + other.id;
+  safetyTargets[key] = { type: 'profile', id: other.id, userId: other.id, username: other.username || null };
+  showSafetyMenu(menuRowsFor(safetyTargets[key]));
+};
+window.reportChatMessage = function(messageId){
+  const other = state.currentConversationOtherUser || {};
+  const key = 'message:' + messageId;
+  safetyTargets[key] = { type: 'message', id: String(messageId), userId: other.id || null, username: other.username || null };
+  openReportModal(key);
+};
+
+// ---- report ----
+let reportTargetKey = null;
+window.openReportModal = function(key){
+  const t = safetyTargets[key];
+  if (!t) return;
+  closeSafetyModals();
+  reportTargetKey = key;
+  document.getElementById('report-title').textContent = t.type === 'profile' ? `Report ${safetyName(t)}` : `Report this ${SAFETY_LABELS[t.type]}`;
+  document.getElementById('report-subtitle').textContent = t.type === 'entity_post'
+    ? "What's wrong with it? Nobody is told who reported it."
+    : `What's wrong with it? ${t.username ? '@' + t.username : 'They'} won't know who reported it.`;
+  document.querySelectorAll('input[name="report-reason"]').forEach(r => { r.checked = false; });
+  document.getElementById('report-details').value = '';
+  document.getElementById('report-error').style.display = 'none';
+  document.getElementById('reportModal').classList.add('show');
+};
+async function sendReport(t, reason, details){
+  const { data, error } = await supabase.rpc('report_content', {
+    p_target_type: t.type, p_target_id: String(t.id), p_reason: reason, p_details: details || null
+  });
+  return { result: data, error };
+}
+window.submitReport = async function(){
+  const t = safetyTargets[reportTargetKey];
+  const errEl = document.getElementById('report-error');
+  const reason = document.querySelector('input[name="report-reason"]:checked')?.value;
+  if (!t) return;
+  if (!reason){ errEl.textContent = 'Please choose what is wrong.'; errEl.style.display = 'block'; return; }
+  if (!navigator.onLine){ errEl.textContent = 'Connect to the internet to send a report.'; errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('report-send-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  const { result, error } = await sendReport(t, reason, document.getElementById('report-details').value.trim());
+  btn.disabled = false; btn.textContent = 'Send report';
+  if (error){
+    const m = error.message || '';
+    errEl.textContent = /not_found/.test(m) ? 'This has already been removed.' : 'Could not send the report — please try again.';
+    errEl.style.display = 'block';
+    return;
+  }
+  closeSafetyModals();
+  toast(result === 'already' ? "You've already reported this — thank you." : 'Report sent — thank you. Our team will review it.', 3500);
+};
+
+// ---- block ----
+let blockTargetUserId = null;
+window.openBlockModal = function(userId){
+  const t = Object.values(safetyTargets).find(x => x.userId === userId) || { userId };
+  closeSafetyModals();
+  blockTargetUserId = userId;
+  const name = safetyName(t);
+  document.getElementById('block-title').textContent = `Block ${name}?`;
+  document.getElementById('block-also-report-label').textContent = `Also report ${name}`;
+  document.getElementById('block-also-report').checked = false;
+  document.getElementById('blockModal').classList.add('show');
+};
+window.confirmBlock = async function(){
+  const userId = blockTargetUserId;
+  if (!userId) return;
+  if (!navigator.onLine){ toast('Connect to the internet to do this'); return; }
+  const t = Object.values(safetyTargets).find(x => x.userId === userId) || { userId };
+  const alsoReport = document.getElementById('block-also-report').checked;
+  const btn = document.getElementById('block-confirm-btn');
+  btn.disabled = true;
+  const { error } = await supabase.rpc('block_user', { p_user: userId });
+  btn.disabled = false;
+  if (error){ toast('Could not block — please try again'); return; }
+  if (alsoReport) await sendReport({ type: 'profile', id: userId }, 'other', 'Reported while blocking');
+  state.blockList.set(userId, true);
+  state.following?.delete?.(userId);
+  closeSafetyModals();
+  toast(`Blocked ${safetyName(t)}.`);
+  // leave anything that belongs to the blocked person
+  const active = document.querySelector('.screen.active')?.id;
+  if (active === 'screen-user-profile' && state.viewingUserId === userId) go(state.userProfileReturnScreen || 'explore');
+  else if (active === 'screen-chat' && state.currentConversationOtherUser?.id === userId) closeChatScreen();
+  else if (active === 'screen-post-detail' && state.currentPostDetailId) openPostDetail(state.currentPostDetailId);
+  else if (active === 'screen-explore') { loadExploreReposts().then(renderExploreReposts); }
+};
+
+window.renderBlockedAccounts = async function(){
+  const list = document.getElementById('blocked-accounts-list');
+  if (!list) return;
+  if (!navigator.onLine){ list.innerHTML = '<p class="small">Connect to the internet to see this.</p>'; return; }
+  list.innerHTML = loadingBlockHtml('Loading…');
+  const { data, error } = await supabase.from('user_blocks').select('blocked_id, created_at').order('created_at', { ascending: false });
+  if (error){ list.innerHTML = errorBlockHtml('Could not load your blocked accounts.', 'renderBlockedAccounts()'); return; }
+  if (!data || !data.length){ list.innerHTML = '<p class="small" style="color:var(--text-faint);text-align:center;margin-top:18px;">You haven\'t blocked anyone.</p>'; return; }
+  const { data: profs } = await supabase.from('profiles_public').select('id, username, full_name, avatar_url').in('id', data.map(b => b.blocked_id));
+  const byId = Object.fromEntries((profs || []).map(p => [p.id, p]));
+  list.innerHTML = data.map(b => {
+    const p = byId[b.blocked_id] || {};
+    return `<div class="card" style="display:flex;align-items:center;gap:12px;padding:12px;">
+      ${avatarHtml(p.avatar_url, p.full_name || p.username, 'width:40px;height:40px;font-size:15px;flex-shrink:0;')}
+      <div style="flex:1;min-width:0;"><div style="font-weight:600;">${escapeHtml(p.full_name || p.username || 'Former member')}</div>
+        <div class="small" style="color:var(--text-faint);">${p.username ? '@' + escapeHtml(p.username) + ' · ' : ''}blocked ${new Date(b.created_at).toLocaleDateString(userDateLocale(), { day: 'numeric', month: 'short' })}</div></div>
+      <button class="btn-sm btn-secondary" onclick="unblockAccount('${b.blocked_id}')">Unblock</button>
+    </div>`;
+  }).join('');
+};
+window.unblockAccount = async function(userId){
+  if (!navigator.onLine){ toast('Connect to the internet to do this'); return; }
+  const { error } = await supabase.rpc('unblock_user', { p_user: userId });
+  if (error){ toast('Could not unblock — please try again'); return; }
+  await loadBlockList();
+  toast('Unblocked.');
+  renderBlockedAccounts();
+};
+
+// ---- admin: reports ----
+let adminReportsFilter = 'open';
+const REPORT_REASON_LABEL = { spam: 'Spam', harassment: 'Harassment', sexual: 'Sexual content', violence: 'Violence', other: 'Other' };
+const REPORT_TYPE_LABEL = { profile: 'Profile', profile_post: 'Post', profile_post_comment: 'Comment', repost: 'Repost',
+  repost_comment: 'Repost comment', entity_post: 'Venue/organizer post', entity_post_comment: 'Comment on a venue/organizer post',
+  moment: 'Moment', message: 'Message' };
+window.setAdminReportsFilter = function(status){
+  adminReportsFilter = status;
+  document.querySelectorAll('#admin-reports-filter .chip-toggle').forEach(b => b.classList.toggle('active', b.dataset.status === status));
+  renderAdminReports();
+};
+window.renderAdminReports = async function(){
+  const list = document.getElementById('admin-reports-list');
+  if (!list) return;
+  if (!navigator.onLine){ list.innerHTML = '<p class="small">Connect to the internet to see reports.</p>'; return; }
+  list.innerHTML = loadingBlockHtml('Loading…');
+  const { data, error } = await supabase.from('content_reports')
+    .select('id, reporter_id, target_type, target_id, reported_user_id, reason, details, content_snapshot, status, created_at')
+    .eq('status', adminReportsFilter).order('created_at', { ascending: false }).limit(100);
+  if (error){ list.innerHTML = errorBlockHtml('Could not load reports — ' + (error.message || ''), 'renderAdminReports()'); return; }
+  if (!data || !data.length){ list.innerHTML = `<p class="small" style="color:var(--text-faint);">No ${adminReportsFilter} reports.</p>`; return; }
+  // one card per reported item, with how many people reported it
+  const groups = {};
+  data.forEach(r => { const k = r.target_type + ':' + r.target_id; (groups[k] = groups[k] || []).push(r); });
+  const ids = [...new Set(data.flatMap(r => [r.reporter_id, r.reported_user_id]).filter(Boolean))];
+  const { data: profs } = ids.length ? await supabase.from('profiles_public').select('id, username').in('id', ids) : { data: [] };
+  const name = Object.fromEntries((profs || []).map(p => [p.id, '@' + p.username]));
+  list.innerHTML = Object.values(groups).map(g => {
+    const r = g[0];
+    const who = name[r.reported_user_id] || 'someone';
+    const reasons = [...new Set(g.map(x => REPORT_REASON_LABEL[x.reason] || x.reason))].join(', ');
+    const details = g.filter(x => x.details).map(x => `<p class="small" style="margin:0;color:var(--text-dim);">“${escapeHtml(x.details)}” — ${escapeHtml(name[x.reporter_id] || 'a member')}</p>`).join('');
+    const canRemove = r.target_type !== 'profile' && adminReportsFilter === 'open';
+    return `<div class="card stack" style="gap:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong style="font-size:14px;">${escapeHtml(REPORT_TYPE_LABEL[r.target_type] || r.target_type)} by ${escapeHtml(who)}</strong><span class="pill" style="font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(228,93,93,.15);color:var(--danger);">${escapeHtml(reasons)}</span></div>
+      ${r.content_snapshot ? `<p class="small" style="margin:0;padding:8px 10px;border-left:3px solid var(--border);white-space:pre-wrap;">${escapeHtml(r.content_snapshot)}</p>` : ''}
+      ${details}
+      <p class="small" style="margin:0;color:var(--text-faint);">Reported by ${escapeHtml(name[r.reporter_id] || 'a member')} · ${new Date(r.created_at).toLocaleString(userDateLocale())} · ${g.length} report${g.length === 1 ? '' : 's'}</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${canRemove ? `<button class="btn-sm btn-danger" onclick="adminRemoveReported('${r.id}')">Remove ${escapeHtml((SAFETY_LABELS[r.target_type] || 'item'))}</button>` : ''}
+        ${r.reported_user_id ? `<button class="btn-sm btn-secondary" onclick="openUserProfile('${r.reported_user_id}', 'admin-reports')">Open profile</button>` : ''}
+        ${adminReportsFilter === 'open' ? `<button class="btn-sm btn-secondary" onclick="adminSetReportStatus('${r.target_type}', '${escapeHtml(r.target_id)}', 'reviewed')">Mark reviewed</button>
+        <button class="btn-sm btn-ghost" onclick="adminSetReportStatus('${r.target_type}', '${escapeHtml(r.target_id)}', 'dismissed')">Dismiss</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+};
+window.adminSetReportStatus = async function(targetType, targetId, status){
+  if (!navigator.onLine){ toast('Connect to the internet to do this'); return; }
+  const { data, error } = await supabase.from('content_reports').update({ status })
+    .eq('target_type', targetType).eq('target_id', targetId).eq('status', 'open').select('id');
+  if (error || !data || !data.length){ toast('Not saved — the database did not allow this change.'); return; }
+  toast(status === 'reviewed' ? 'Marked as reviewed' : 'Dismissed');
+  renderAdminReports();
+};
+window.adminRemoveReported = async function(reportId){
+  if (!confirm('Remove this for everyone? This can’t be undone.')) return;
+  if (!navigator.onLine){ toast('Connect to the internet to do this'); return; }
+  const { error } = await supabase.rpc('admin_remove_reported_content', { p_report_id: reportId });
+  if (error){ toast('Could not remove — ' + (error.message || 'try again')); return; }
+  toast('Removed');
+  renderAdminReports();
+};
+
 window.notifActionSubmitReport = async function(category){
   const notificationId = state.notifActionId;
   closeNotifActionModal();
@@ -11055,7 +11424,7 @@ function renderPostCard(post, context){
     <div class="card stack" style="padding:12px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <p class="small" style="margin:0;color:var(--text-faint);">${new Date(post.created_at).toLocaleString(userDateLocale())}</p>
-        ${isOwner ? `<button class="icon-action" title="Delete" aria-label="Delete" onclick="deleteProfilePost('${post.id}','${context}')">🗑️</button>` : ''}
+        ${isOwner ? `<button class="icon-action" title="Delete" aria-label="Delete" onclick="deleteProfilePost('${post.id}','${context}')">🗑️</button>` : safetyBtn('profile_post', post.id, post.user_id, post.profiles_public?.username || (post.user_id === state.viewingUserId ? state.viewingProfileData?.username : null))}
       </div>
       ${post.content ? `<p style="margin:0;white-space:pre-wrap;">${escapeHtml(post.content)}</p>` : ''}
       ${post.image_url ? `<img src="${escapeHtml(post.image_url)}" style="width:100%;border-radius:var(--radius-sm);max-height:360px;object-fit:cover;" alt="">` : ''}
@@ -11237,7 +11606,8 @@ window.openPostDetail = async function(postId, returnScreen){
       ${c.video_url ? `<video src="${escapeHtml(c.video_url)}" controls style="width:100%;border-radius:var(--radius-sm);max-height:240px;"></video>` : ''}
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
         ${Object.keys(POST_REACTION_EMOJI).map(type => `<button class="reaction-btn ${myCommentReaction[c.id]===type?'active':''}" onclick="reactToComment('${c.id}','${type}')">${POST_REACTION_EMOJI[type]}${commentCounts[c.id]?.[type] ? ' '+commentCounts[c.id][type] : ''}</button>`).join('')}
-        ${(state.session && (c.user_id === state.session.user.id || post.user_id === state.session.user.id)) ? `<button class="icon-action" style="margin-left:auto;" title="Delete" aria-label="Delete" onclick="deleteProfilePostComment('${c.id}')">🗑️</button>` : ''}
+        ${safetyBtn('profile_post_comment', c.id, c.user_id, c.profiles_public?.username, 'margin-left:auto;')}
+        ${(state.session && (c.user_id === state.session.user.id || post.user_id === state.session.user.id)) ? `<button class="icon-action" style="margin-left:${state.session && c.user_id !== state.session.user.id ? '6px' : 'auto'};" title="Delete" aria-label="Delete" onclick="deleteProfilePostComment('${c.id}')">🗑️</button>` : ''}
       </div>
       ${Object.values(commentCounts[c.id] || {}).some(n => n > 0) ? `<p class="small" style="cursor:pointer;opacity:0.7;margin:2px 0 0;" onclick="openReactedByModal('profile_post_comment_reactions', 'comment_id', '${c.id}')">See who reacted</p>` : ''}
     </div>
@@ -11404,7 +11774,7 @@ function renderEntityPostCard(post, context, canManage){
     <div class="card stack" style="padding:12px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <p class="small" style="margin:0;color:var(--text-faint);">${new Date(post.created_at).toLocaleString(userDateLocale())}</p>
-        ${canManage ? `<button class="icon-action" title="Delete" aria-label="Delete" onclick="deleteEntityPost('${post.id}','${post.entity_type}','${post.entity_id}','${context}')">🗑️</button>` : ''}
+        ${canManage ? `<button class="icon-action" title="Delete" aria-label="Delete" onclick="deleteEntityPost('${post.id}','${post.entity_type}','${post.entity_id}','${context}')">🗑️</button>` : safetyBtn('entity_post', post.id, null, null)}
       </div>
       ${post.content ? `<p style="margin:0;white-space:pre-wrap;">${escapeHtml(post.content)}</p>` : ''}
       ${post.image_url ? `<img src="${escapeHtml(post.image_url)}" style="width:100%;border-radius:var(--radius-sm);max-height:360px;object-fit:cover;" alt="">` : ''}
@@ -11664,7 +12034,8 @@ window.openEntityPostDetail = async function(postId, returnContext){
       ${c.video_url ? `<video src="${escapeHtml(c.video_url)}" controls style="width:100%;border-radius:var(--radius-sm);max-height:240px;"></video>` : ''}
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
         ${Object.keys(POST_REACTION_EMOJI).map(type => `<button class="reaction-btn ${myCommentReaction[c.id]===type?'active':''}" onclick="reactToEntityComment('${c.id}','${type}')">${POST_REACTION_EMOJI[type]}${commentCounts[c.id]?.[type] ? ' '+commentCounts[c.id][type] : ''}</button>`).join('')}
-        ${(state.session && (c.user_id === state.session.user.id || canManage)) ? `<button class="icon-action" style="margin-left:auto;" title="Delete" aria-label="Delete" onclick="deleteEntityPostComment('${c.id}')">🗑️</button>` : ''}
+        ${safetyBtn('entity_post_comment', c.id, c.user_id, c.profiles_public?.username, 'margin-left:auto;')}
+        ${(state.session && (c.user_id === state.session.user.id || canManage)) ? `<button class="icon-action" style="margin-left:${state.session && c.user_id !== state.session.user.id ? '6px' : 'auto'};" title="Delete" aria-label="Delete" onclick="deleteEntityPostComment('${c.id}')">🗑️</button>` : ''}
       </div>
       ${Object.values(commentCounts[c.id] || {}).some(n => n > 0) ? `<p class="small" style="cursor:pointer;opacity:0.7;margin:2px 0 0;" onclick="openReactedByModal('entity_post_comment_reactions', 'comment_id', '${c.id}')">See who reacted</p>` : ''}
     </div>
@@ -11798,6 +12169,10 @@ window.openUserProfile = async function(userId, returnScreen){
   if (!navigator.onLine){ toast('Connect to the internet to view profiles'); return; }
 
   state.userProfileReturnScreen = returnScreen || 'explore';
+  if (isBlockedUser(userId)){
+    toast(state.blockList.get(userId) ? "You've blocked this person. Unblock them in Settings → Privacy & data → Blocked accounts." : "This profile isn't available.", 4200);
+    return;
+  }
 
   const { data: profile, error } = await supabase.from('profiles_public').select('id, username, full_name, avatar_url, vibe, bio').eq('id', userId).maybeSingle();
   if (error || !profile){ toast('Could not load that profile'); return; }
@@ -12455,6 +12830,7 @@ async function unsubscribeFromPush(reg, sub){
 // already done — otherwise it defers to the normal onboarding steps first
 // and leaves the pending link intact for the next call.
 async function resolvePostAuthDestination(){
+  loadBlockList();
   if (!state.profile?.username){ go('pick-username'); return; }
   if (!state.profile?.profile_complete){ go('profile-setup'); return; }
   const pendingProfile = localStorage.getItem('insydelive_pending_profile');
@@ -12680,7 +13056,7 @@ async function boot(){
   }
   processOutbox();
 }
-boot();
+boot().catch(e => console.error('boot failed:', e)).finally(openPublicPageFromLink);
 
 /* ---------- Realtime: notification bell badge, independent of which screen is open ---------- */
 let userChannel = null;
@@ -13701,6 +14077,7 @@ window.publishDraftEvent = async function(){
 // the webhook confirms payment; this function never publishes anything
 // itself.
 async function startEventListingFeeCheckout(){
+  if (nativeFeeBlocked()) return false;
   const proceed = confirm('This event needs a listing fee paid before it can go live. Continue to checkout?');
   if (!proceed) return false;
   const { data: sessionData, error } = await invokePaymentSession({
@@ -14632,7 +15009,7 @@ async function renderConversationsList(){
     .order('last_message_at', { ascending: false });
 
   if (error){ list.innerHTML = errorBlockHtml('Could not load messages. — ' + (error?.message || ''), 'renderConversationsList()'); return; }
-  state.conversations = data || [];
+  state.conversations = (data || []).filter(c => !isBlockedUser(c.user_a === userId ? c.user_b : c.user_a));
 
   if (!state.conversations.length){
     list.innerHTML = emptyBlockHtml('No conversations yet — message someone from a venue’s People tab to start one.');
@@ -14744,7 +15121,7 @@ function renderChatMessages(messages){
       ${escapeHtml(m.body)}
       <div class="msg-time">
         ${new Date(m.created_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
-        <a href="#" onclick="event.preventDefault(); deleteMessageForMe('${m.id}')" style="opacity:0.6;font-size:11px;margin-left:8px;">Delete</a>${m.sender_id === myId ? ` <a href="#" onclick="event.preventDefault(); deleteMessageForEveryone('${m.id}')" style="opacity:0.6;font-size:11px;">Unsend</a>` : ''}
+        <a href="#" onclick="event.preventDefault(); deleteMessageForMe('${m.id}')" style="opacity:0.6;font-size:11px;margin-left:8px;">Delete</a>${m.sender_id !== myId ? ` <a href="#" onclick="event.preventDefault(); reportChatMessage('${m.id}')" style="opacity:0.6;font-size:11px;margin-left:8px;">Report</a>` : ''}${m.sender_id === myId ? ` <a href="#" onclick="event.preventDefault(); deleteMessageForEveryone('${m.id}')" style="opacity:0.6;font-size:11px;">Unsend</a>` : ''}
       </div>
     </div>
   `).join('') : '<p class="small center" style="padding:30px 0;">Say hello 👋</p>';
@@ -15051,6 +15428,7 @@ window.saveGathering = async function(){
 };
 
 window.payGatheringCreationFee = async function(){
+  if (nativeFeeBlocked()) return;
   if (!navigator.onLine){ toast('Connect to the internet to do this'); return; }
   if (!state.editingGatheringId) return;
   const { data: sessionData, error } = await invokePaymentSession({
@@ -20263,6 +20641,7 @@ window.submitFeatureAndPush = async function(){
    become visible to admins for review — see advertising_payment_migration.sql
    and admin_list filtering below. */
 window.openAdvertiseRequestScreen = function(targetType, targetId, targetLabel){
+  if (nativeFeeBlocked()) return;
   state.advertiseRequestTarget = { type: targetType, id: targetId, label: targetLabel };
   document.getElementById('ad-request-target-label').textContent = targetLabel;
   document.getElementById('ad-request-type').value = 'featured';
