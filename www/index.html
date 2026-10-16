@@ -2875,6 +2875,29 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
     </div>
   </section>
 
+  <!-- ============ CHILD SAFETY STANDARDS (public page for Google Play: app.insydelive.com/?page=child-safety, approved 16 Oct 2026) ============ -->
+  <section class="screen" id="screen-child-safety">
+    <div class="topbar"><button class="icon-btn" onclick="go(state.session ? 'settings' : 'welcome')" aria-label="Back">←</button><span class="brand">⚡ InsydeLive</span><span style="width:38px;"></span></div>
+    <div class="content content--noNav">
+      <div class="stack">
+        <h2 style="margin:0;">InsydeLive Child Safety Standards</h2>
+        <p class="small">InsydeLive is for adults aged 18 and over. We have zero tolerance for child sexual abuse and exploitation (CSAE), including child sexual abuse material (CSAM), grooming, sexualising minors, or any attempt to contact or harm a child.</p>
+        <h3 style="margin:6px 0 0;font-size:15px;">What we do</h3>
+        <ul class="small" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;">
+          <li>Anyone under 18 is not allowed to create an account; sign-up requires a date of birth showing 18 or over.</li>
+          <li>Any content or account involving CSAE is removed as soon as we become aware of it, and the account is permanently banned.</li>
+          <li>We report confirmed CSAM and child exploitation to the UK National Crime Agency (CEOP) and the Internet Watch Foundation, and to other authorities where the law requires.</li>
+          <li>We co-operate with law enforcement investigations.</li>
+        </ul>
+        <h3 style="margin:6px 0 0;font-size:15px;">How to report</h3>
+        <p class="small">In the app, tap ⋯ on any post, comment, moment, message or profile and choose Report. You can also email <a href="mailto:support@insydelive.com?subject=Child%20safety%20concern" style="color:var(--gold);">support@insydelive.com</a>. If a child is in immediate danger, call 999 (UK) or your local emergency number first.</p>
+        <h3 style="margin:6px 0 0;font-size:15px;">Contact</h3>
+        <p class="small">Our child safety contact is reachable at <a href="mailto:support@insydelive.com?subject=Child%20safety%20concern" style="color:var(--gold);">support@insydelive.com</a>.</p>
+        <p class="small" style="color:var(--text-faint);">Last updated 15 October 2026.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ DELETE ACCOUNT (public page for Google Play: app.insydelive.com/?page=delete-account) ============ -->
   <section class="screen" id="screen-delete-account">
     <div class="topbar"><button class="icon-btn" onclick="go(state.session ? 'settings' : 'welcome')" aria-label="Back">←</button><span class="brand">⚡ InsydeLive</span><span style="width:38px;"></span></div>
@@ -3632,6 +3655,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
       <h2 style="margin:0;" id="report-title">Report</h2>
       <p class="small" id="report-subtitle">What's wrong with it?</p>
       <div class="stack" style="gap:8px;" id="report-reasons" onchange="document.getElementById('report-error').style.display='none'">
+        <label class="radio-row"><input type="radio" name="report-reason" value="child_safety"> Child safety concern</label>
         <label class="radio-row"><input type="radio" name="report-reason" value="spam"> Spam or scam</label>
         <label class="radio-row"><input type="radio" name="report-reason" value="harassment"> Harassment, bullying or hate</label>
         <label class="radio-row"><input type="radio" name="report-reason" value="sexual"> Nudity or sexual content</label>
@@ -4423,7 +4447,7 @@ setInterval(async () => {
      does not (two tries, 3 s apart). It re-checks every 30 s and reloads the app once we are back.
    ============================================================ */
 // The app version shown in Settings. Must match CACHE_VERSION in sw.js (the release packaging checks this).
-const APP_VERSION = '2.4.3';
+const APP_VERSION = '2.4.4';
 { const v = document.getElementById('app-version-label'); if (v) v.textContent = APP_VERSION; }
 // Phone autofill (14 Oct 2026): Android offered a saved home address ("Home, Wantage") on boxes like Bio,
 // and inside the app that pop-up took the keyboard away after one letter. The phone's saved details only
@@ -10351,7 +10375,7 @@ window.notifActionTogglePref = function(){
    - Android app only: event listing fees, gathering creation fees and advertising requests are not sold
      inside the app (Google Play payments policy). Organisers use app.insydelive.com for those.
    ============================================================ */
-const PUBLIC_PAGES = ['privacy', 'terms', 'cookies', 'payouts-terms', 'delete-account'];
+const PUBLIC_PAGES = ['privacy', 'terms', 'cookies', 'payouts-terms', 'delete-account', 'child-safety'];   // child-safety added 16 Oct
 function openPublicPageFromLink(){
   const page = new URLSearchParams(window.location.search).get('page');
   if (!page || !PUBLIC_PAGES.includes(page)) return;
@@ -10548,7 +10572,7 @@ window.unblockAccount = async function(userId){
 
 // ---- admin: reports ----
 let adminReportsFilter = 'open';
-const REPORT_REASON_LABEL = { spam: 'Spam', harassment: 'Harassment', sexual: 'Sexual content', violence: 'Violence', other: 'Other' };
+const REPORT_REASON_LABEL = { child_safety: 'CHILD SAFETY', spam: 'Spam', harassment: 'Harassment', sexual: 'Sexual content', violence: 'Violence', other: 'Other' };
 const REPORT_TYPE_LABEL = { profile: 'Profile', profile_post: 'Post', profile_post_comment: 'Comment', repost: 'Repost',
   repost_comment: 'Repost comment', entity_post: 'Venue/organizer post', entity_post_comment: 'Comment on a venue/organizer post',
   moment: 'Moment', message: 'Message' };
@@ -10573,13 +10597,16 @@ window.renderAdminReports = async function(){
   const ids = [...new Set(data.flatMap(r => [r.reporter_id, r.reported_user_id]).filter(Boolean))];
   const { data: profs } = ids.length ? await supabase.from('profiles_public').select('id, username').in('id', ids) : { data: [] };
   const name = Object.fromEntries((profs || []).map(p => [p.id, '@' + p.username]));
-  list.innerHTML = Object.values(groups).map(g => {
+  const urgentFirst = Object.values(groups).sort((a, b) => (b.some(x => x.reason === 'child_safety') ? 1 : 0) - (a.some(x => x.reason === 'child_safety') ? 1 : 0));
+  list.innerHTML = urgentFirst.map(g => {
     const r = g[0];
     const who = name[r.reported_user_id] || 'someone';
     const reasons = [...new Set(g.map(x => REPORT_REASON_LABEL[x.reason] || x.reason))].join(', ');
     const details = g.filter(x => x.details).map(x => `<p class="small" style="margin:0;color:var(--text-dim);">“${escapeHtml(x.details)}” — ${escapeHtml(name[x.reporter_id] || 'a member')}</p>`).join('');
     const canRemove = r.target_type !== 'profile' && adminReportsFilter === 'open';
-    return `<div class="card stack" style="gap:8px;">
+    const urgent = g.some(x => x.reason === 'child_safety');
+    return `<div class="card stack" style="gap:8px;${urgent ? 'border:2px solid var(--danger);' : ''}">
+      ${urgent ? '<p class="small" style="margin:0;color:var(--danger);font-weight:700;">⚠ Child safety report — review now. If confirmed, remove it, ban the account and report it to the NCA (CEOP) and the Internet Watch Foundation.</p>' : ''}
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong style="font-size:14px;">${escapeHtml(REPORT_TYPE_LABEL[r.target_type] || r.target_type)} by ${escapeHtml(who)}</strong><span class="pill" style="font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(228,93,93,.15);color:var(--danger);">${escapeHtml(reasons)}</span></div>
       ${r.content_snapshot ? `<p class="small" style="margin:0;padding:8px 10px;border-left:3px solid var(--border);white-space:pre-wrap;">${escapeHtml(r.content_snapshot)}</p>` : ''}
       ${details}
