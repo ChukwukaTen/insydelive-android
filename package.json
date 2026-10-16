@@ -1,6 +1,6 @@
 {
   "name": "insydelive-android",
-  "version": "2.4.3",
+  "version": "2.4.4",
   "private": true,
   "description": "InsydeLive Android app (Capacitor shell around the InsydeLive web app, with the app's files built in)",
   "scripts": {
