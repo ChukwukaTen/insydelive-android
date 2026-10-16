@@ -10604,7 +10604,7 @@ window.renderAdminReports = async function(){
     const reasons = [...new Set(g.map(x => REPORT_REASON_LABEL[x.reason] || x.reason))].join(', ');
     const details = g.filter(x => x.details).map(x => `<p class="small" style="margin:0;color:var(--text-dim);">“${escapeHtml(x.details)}” — ${escapeHtml(name[x.reporter_id] || 'a member')}</p>`).join('');
     const canRemove = r.target_type !== 'profile' && adminReportsFilter === 'open';
-    const urgent = g.some(x => x.reason === 'child_safety');
+    const urgent = adminReportsFilter === 'open' && g.some(x => x.reason === 'child_safety');   // red box only while it still needs action
     return `<div class="card stack" style="gap:8px;${urgent ? 'border:2px solid var(--danger);' : ''}">
       ${urgent ? '<p class="small" style="margin:0;color:var(--danger);font-weight:700;">⚠ Child safety report — review now. If confirmed, remove it, ban the account and report it to the NCA (CEOP) and the Internet Watch Foundation.</p>' : ''}
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong style="font-size:14px;">${escapeHtml(REPORT_TYPE_LABEL[r.target_type] || r.target_type)} by ${escapeHtml(who)}</strong><span class="pill" style="font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(228,93,93,.15);color:var(--danger);">${escapeHtml(reasons)}</span></div>
