@@ -85,8 +85,8 @@ jobs:
 
       - name: Build (archive)
         run: |
-          set -o pipefail
           VERSION=$(node -p "require('./package.json').version")
+          set +e
           xcodebuild archive \
             -project ios/App/App.xcodeproj -scheme App -configuration Release \
             -destination 'generic/platform=iOS' \
@@ -95,11 +95,19 @@ jobs:
             -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
             MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
-            | tail -n 80
+            > "$RUNNER_TEMP/archive.log" 2>&1
+          RC=$?
+          tail -n 80 "$RUNNER_TEMP/archive.log"
+          if [ $RC -ne 0 ]; then
+            grep -E "error:|error [A-Z]|No profiles|No Accounts|Signing|provisioning|requires a development team" "$RUNNER_TEMP/archive.log" | sort -u | head -n 8 | while IFS= read -r line; do
+              echo "::error title=Build::$(echo "$line" | cut -c1-400)"
+            done
+            exit $RC
+          fi
 
       - name: Upload to App Store Connect (TestFlight)
         run: |
-          set -o pipefail
+          set +e
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -118,7 +126,15 @@ jobs:
             -exportPath "$RUNNER_TEMP/export" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" \
-            | tail -n 60
+            > "$RUNNER_TEMP/export.log" 2>&1
+          RC=$?
+          tail -n 60 "$RUNNER_TEMP/export.log"
+          if [ $RC -ne 0 ]; then
+            grep -E "error|Error|ERROR|failed|Failed" "$RUNNER_TEMP/export.log" | sort -u | head -n 8 | while IFS= read -r line; do
+              echo "::error title=Upload::$(echo "$line" | cut -c1-400)"
+            done
+            exit $RC
+          fi
           echo "Uploaded build $GITHUB_RUN_NUMBER (version $(node -p "require('./package.json').version")). It appears in App Store Connect -> TestFlight after Apple finishes processing (usually 5-30 minutes)."
 
       - name: Remove the key file
