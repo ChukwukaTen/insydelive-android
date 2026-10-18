@@ -83,7 +83,7 @@ jobs:
           echo "KEY_PATH=$F" >> "$GITHUB_ENV"
           echo "Key file OK"
 
-      - name: Build (archive)
+      - name: Build (archive, not signed yet - signing happens at upload)
         run: |
           VERSION=$(node -p "require('./package.json').version")
           set +e
@@ -91,9 +91,8 @@ jobs:
             -project ios/App/App.xcodeproj -scheme App -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/InsydeLive.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
             MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
             > "$RUNNER_TEMP/archive.log" 2>&1
           RC=$?
