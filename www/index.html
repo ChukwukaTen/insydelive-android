@@ -4447,7 +4447,7 @@ setInterval(async () => {
      does not (two tries, 3 s apart). It re-checks every 30 s and reloads the app once we are back.
    ============================================================ */
 // The app version shown in Settings. Must match CACHE_VERSION in sw.js (the release packaging checks this).
-const APP_VERSION = '2.4.4';
+const APP_VERSION = '2.4.5';
 { const v = document.getElementById('app-version-label'); if (v) v.textContent = APP_VERSION; }
 // Phone autofill (14 Oct 2026): Android offered a saved home address ("Home, Wantage") on boxes like Bio,
 // and inside the app that pop-up took the keyboard away after one letter. The phone's saved details only
@@ -6100,7 +6100,24 @@ function showTurnstileBox(show){
 }
 
 // Returns a fresh token, or null if the check could not run (the caller sends the request anyway).
+// In the Android/iPhone app (v2.4.5+) the check runs on https://app.insydelive.com/captcha.html in a small
+// native panel, because Cloudflare only runs on a real https address (the iPhone app's own address is capacitor://).
+// Older app builds without the panel fall through to the inline check below (it works on Android).
+const NATIVE_CAPTCHA_URL = 'https://app.insydelive.com/captcha.html';
+function nativeCaptchaAvailable(){
+  try { return IS_NATIVE_APP && typeof window.Capacitor.isPluginAvailable === 'function' && window.Capacitor.isPluginAvailable('InsydeCaptcha'); }
+  catch (_) { return false; }
+}
 async function getCaptchaToken(){
+  if (nativeCaptchaAvailable()){
+    try {
+      const r = await window.Capacitor.Plugins.InsydeCaptcha.getToken({ url: NATIVE_CAPTCHA_URL });
+      return (r && typeof r.token === 'string' && r.token) ? r.token : null;
+    } catch (e){
+      console.warn('App security check did not complete:', e && e.message);
+      return null;
+    }
+  }
   let ts;
   try {
     ts = await Promise.race([loadTurnstileScript(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))]);
@@ -10388,7 +10405,7 @@ function openPublicPageFromLink(){
 }
 
 const NATIVE_BLOCKED_PURPOSES = ['event_listing_fee', 'gathering_creation_fee', 'advertising_request', 'live_drop'];   // live_drop approved 15 Oct
-const NATIVE_NOT_AVAILABLE_MSG = "This option isn't available in the Android app.";
+const NATIVE_NOT_AVAILABLE_MSG = "This option isn't available in the app.";
 function nativeFeeBlocked(){
   if (!IS_NATIVE_APP) return false;
   toast(NATIVE_NOT_AVAILABLE_MSG, 3500);

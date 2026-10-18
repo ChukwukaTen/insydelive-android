@@ -11,6 +11,8 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // v2.4.5: InsydeLive's own security check panel (see InsydeCaptchaPlugin). Must be registered before super.onCreate.
+        registerPlugin(InsydeCaptchaPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Approved 14 Oct 2026 (option A): switch off the phone's autofill pop-up inside the app.

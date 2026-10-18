@@ -28,7 +28,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Google Play needs a higher number for every upload; the build passes the run number in.
         versionCode((project.findProperty('insydeVersionCode') ?: '1') as Integer)
-        versionName "2.4.4"
+        versionName "2.4.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
