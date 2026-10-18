@@ -55,18 +55,32 @@ jobs:
           grep -q '"appId": "com.insydelive.app"' ios/App/App/capacitor.config.json || { echo "WRONG app ID"; exit 1; }
           echo "App files OK: version $VERSION, production database, app ID com.insydelive.app"
 
-      - name: Key check
+      - name: Key check 1 - Key ID secret is there
+        run: |
+          if [ -z "$KEY_ID" ]; then echo "::error title=Key check 1::Secret APPSTORE_API_KEY_ID is missing or empty"; exit 1; fi
+          echo "Key ID is ${#KEY_ID} characters long (should be 10)"
+          if [ ${#KEY_ID} -ne 10 ]; then echo "::error title=Key check 1::APPSTORE_API_KEY_ID is ${#KEY_ID} characters, should be 10"; exit 1; fi
+
+      - name: Key check 2 - Issuer ID secret is there
+        run: |
+          if [ -z "$ISSUER_ID" ]; then echo "::error title=Key check 2::Secret APPSTORE_API_ISSUER_ID is missing or empty"; exit 1; fi
+          if ! echo "$ISSUER_ID" | grep -Eq '^[0-9a-fA-F-]{36}$'; then echo "::error title=Key check 2::APPSTORE_API_ISSUER_ID is ${#ISSUER_ID} characters and not in the 8-4-4-4-12 form"; exit 1; fi
+
+      - name: Key check 3 - private key file looks right
         env:
           KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
         run: |
-          set -e
-          [ -n "$KEY_ID" ] || { echo "Secret APPSTORE_API_KEY_ID is missing"; exit 1; }
-          [ -n "$ISSUER_ID" ] || { echo "Secret APPSTORE_API_ISSUER_ID is missing"; exit 1; }
+          if [ -z "$KEY" ]; then echo "::error title=Key check 3::Secret APPSTORE_API_PRIVATE_KEY is missing or empty"; exit 1; fi
           mkdir -p "$RUNNER_TEMP/keys"
-          printf '%s\n' "$KEY" | tr -d '\r' > "$RUNNER_TEMP/keys/AuthKey_${KEY_ID}.p8"
-          grep -q "BEGIN PRIVATE KEY" "$RUNNER_TEMP/keys/AuthKey_${KEY_ID}.p8" || { echo "Secret APPSTORE_API_PRIVATE_KEY does not look like the .p8 file (missing BEGIN PRIVATE KEY line)"; exit 1; }
-          grep -q "END PRIVATE KEY" "$RUNNER_TEMP/keys/AuthKey_${KEY_ID}.p8" || { echo "Secret APPSTORE_API_PRIVATE_KEY is cut short (missing END PRIVATE KEY line)"; exit 1; }
-          echo "KEY_PATH=$RUNNER_TEMP/keys/AuthKey_${KEY_ID}.p8" >> "$GITHUB_ENV"
+          F="$RUNNER_TEMP/keys/AuthKey_${KEY_ID}.p8"
+          printf '%s\n' "$KEY" | tr -d '\r' > "$F"
+          grep -q "BEGIN PRIVATE KEY" "$F" || { echo "::error title=Key check 3::APPSTORE_API_PRIVATE_KEY has no BEGIN PRIVATE KEY line"; exit 1; }
+          grep -q "END PRIVATE KEY" "$F" || { echo "::error title=Key check 3::APPSTORE_API_PRIVATE_KEY has no END PRIVATE KEY line (cut short?)"; exit 1; }
+          L=$(wc -l < "$F" | tr -d ' ')
+          echo "Key file has $L lines"
+          if [ "$L" -lt 3 ]; then echo "::error title=Key check 3::APPSTORE_API_PRIVATE_KEY is all on one line ($L) - the line breaks were lost"; exit 1; fi
+          openssl pkey -in "$F" -noout 2>/dev/null || { echo "::error title=Key check 3::APPSTORE_API_PRIVATE_KEY is not a readable private key"; exit 1; }
+          echo "KEY_PATH=$F" >> "$GITHUB_ENV"
           echo "Key file OK"
 
       - name: Build (archive)
