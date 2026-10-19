@@ -53,6 +53,8 @@ jobs:
           grep -q "bjtialxcvyjdxwurysbv.supabase.co" "$F" || { echo "NOT the production database"; exit 1; }
           if grep -q "qefslvaqnakxgkmxxlsi" "$F"; then echo "DEV database found - stop"; exit 1; fi
           grep -q '"appId": "com.insydelive.app"' ios/App/App/capacitor.config.json || { echo "WRONG app ID"; exit 1; }
+          grep -q "registerPluginInstance(InsydeScannerPlugin())" ios/App/App/InsydeBridgeViewController.swift || { echo "::error title=App check::QR scanner plugin is not registered"; exit 1; }
+          grep -q "CapacitorShare" ios/App/CapApp-SPM/Package.swift && grep -q "CapacitorHaptics" ios/App/CapApp-SPM/Package.swift || { echo "::error title=App check::Share or Haptics plugin missing from the iPhone project"; exit 1; }
           grep -q "rootViewController = InsydeBridgeViewController()" ios/App/App/SceneDelegate.swift || { echo "::error title=App check::SceneDelegate does not use InsydeBridgeViewController (security check panel would be missing)"; exit 1; }
           echo "App files OK: version $VERSION, production database, app ID com.insydelive.app"
 

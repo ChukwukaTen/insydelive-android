@@ -2076,6 +2076,11 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
         </div>
 
         <div class="card stack">
+          <h3 style="margin:0;font-size:15px;">Help</h3>
+          <button class="btn btn-secondary btn-sm" onclick="go('support')">Help &amp; contact</button>
+        </div>
+
+        <div class="card stack">
           <h3 style="margin:0;font-size:15px;">Legal</h3>
           <button class="btn btn-secondary btn-sm" onclick="go('terms')">Terms of Service</button>
           <button class="btn btn-secondary btn-sm" onclick="go('privacy')">Privacy Policy</button>
@@ -2871,6 +2876,30 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
         <h2>Contact</h2>
         <p class="small">Questions about this policy: <strong>legal@insydelive.com</strong></p>
         <p class="small" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);color:var(--text-faint);font-size:12px;">InsydeLive Limited · Registered in England and Wales · Company number 17380805 · Registered office: Suite Ra01, 195-197 Wood Street, Wood Street, London, England, E17 3NU</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HELP & CONTACT (public page, App Store Support URL: app.insydelive.com/?page=support) ============ -->
+  <section class="screen" id="screen-support">
+    <div class="topbar"><button class="icon-btn" onclick="go(state.session ? 'settings' : 'welcome')" aria-label="Back">←</button><span class="brand">⚡ InsydeLive</span><span style="width:38px;"></span></div>
+    <div class="content content--noNav">
+      <div class="stack">
+        <h2 style="margin:0;">Help &amp; contact</h2>
+        <p class="small">Email us at <a href="mailto:support@insydelive.com" style="color:var(--gold);">support@insydelive.com</a> and we'll get back to you. We aim to reply within 2 working days. Please write from the email address on your account.</p>
+        <a class="btn btn-primary" href="mailto:support@insydelive.com?subject=InsydeLive%20help" style="text-align:center;text-decoration:none;">Email support</a>
+        <h3 style="margin:6px 0 0;font-size:15px;">Common questions</h3>
+        <ul class="small" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;">
+          <li><strong>Can't sign in?</strong> Tap "Forgot password?" on the sign-in screen. Still stuck? Email us from the address on your account.</li>
+          <li><strong>Report or block someone:</strong> tap ⋯ on any post, comment, moment, message or profile, then choose Report or Block.</li>
+          <li><strong>Tickets, gifts and payments:</strong> email us with the date and amount. Our <a href="javascript:void(0)" onclick="go('terms')" style="color:var(--gold);">Terms of Service</a> and <a href="javascript:void(0)" onclick="go('payouts-terms')" style="color:var(--gold);">Payments &amp; Payouts Terms</a> explain refunds and payouts.</li>
+          <li><strong>List your venue or events:</strong> apply in the app, or email us and we'll help you get set up.</li>
+          <li><strong>Delete your account:</strong> <a href="javascript:void(0)" onclick="go('delete-account')" style="color:var(--gold);">see how to delete your account</a>.</li>
+          <li><strong>Child safety:</strong> read our <a href="javascript:void(0)" onclick="go('child-safety')" style="color:var(--gold);">Child Safety Standards</a>. If a child is in immediate danger, call 999 (UK) or your local emergency number first.</li>
+        </ul>
+        <h3 style="margin:6px 0 0;font-size:15px;">About us</h3>
+        <p class="small">InsydeLive Limited, a company registered in England and Wales (company number 17380805). Registered office: Suite Ra01, 195–197 Wood Street, London E17 3NU, United Kingdom.</p>
+        <p class="small" style="color:var(--text-faint);"><a href="javascript:void(0)" onclick="go('privacy')" style="color:var(--text-faint);">Privacy Policy</a> · <a href="javascript:void(0)" onclick="go('terms')" style="color:var(--text-faint);">Terms</a> · <a href="javascript:void(0)" onclick="go('cookies')" style="color:var(--text-faint);">Cookies</a></p>
       </div>
     </div>
   </section>
@@ -4106,6 +4135,37 @@ import QRCode from 'https://esm.sh/qrcode@1.5.3';
    ============================================================ */
 // Round 3 (14 Oct): true only inside the InsydeLive Android/iPhone app (Capacitor). The website is unaffected.
 const IS_NATIVE_APP = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+// ---------- v2.4.6: phone-app helpers (share menu, haptics, links) ----------
+// Links people send to others must open on the website. In the iPhone app the page's own address is
+// capacitor://app.insydelive.com, which no one else can open, so the apps always use the real site.
+const APP_WEB_BASE = 'https://app.insydelive.com/';
+function shareBaseUrl(){ return IS_NATIVE_APP ? APP_WEB_BASE : window.location.origin + window.location.pathname; }
+function authRedirectBase(){ const h = window.location.href; return IS_NATIVE_APP ? APP_WEB_BASE : h.slice(0, h.lastIndexOf('/') + 1); }
+function nativePluginAvailable(name){
+  try { return IS_NATIVE_APP && typeof window.Capacitor.isPluginAvailable === 'function' && window.Capacitor.isPluginAvailable(name); }
+  catch (_) { return false; }
+}
+// The phone's own share menu (WhatsApp, Messages, ...). Returns true when the menu was shown,
+// including when the person closed it without sharing; false means "use the website's way".
+async function nativeShare(data){
+  if (!nativePluginAvailable('Share')) return false;
+  try {
+    await window.Capacitor.Plugins.Share.share({ title: data.title, text: data.text, url: data.url, dialogTitle: 'Share' });
+    return true;
+  } catch (e){
+    return /cancel/i.test((e && e.message) || '');
+  }
+}
+// A short vibration in the apps only ('light' tap, or 'success' / 'error'). Never throws, never waits.
+function haptic(kind){
+  if (!nativePluginAvailable('Haptics')) return;
+  try {
+    const H = window.Capacitor.Plugins.Haptics;
+    const p = (kind === 'success' || kind === 'error') ? H.notification({ type: kind.toUpperCase() }) : H.impact({ style: 'LIGHT' });
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  } catch (_) {}
+}
+
 const SUPABASE_URL = 'https://bjtialxcvyjdxwurysbv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_EcLKeK6058RCihb29GmZjA_HZPZ2air'; // production publishable key (the new-style public key)
 
@@ -4447,7 +4507,7 @@ setInterval(async () => {
      does not (two tries, 3 s apart). It re-checks every 30 s and reloads the app once we are back.
    ============================================================ */
 // The app version shown in Settings. Must match CACHE_VERSION in sw.js (the release packaging checks this).
-const APP_VERSION = '2.4.5';
+const APP_VERSION = '2.4.6';
 { const v = document.getElementById('app-version-label'); if (v) v.textContent = APP_VERSION; }
 // Phone autofill (14 Oct 2026): Android offered a saved home address ("Home, Wantage") on boxes like Bio,
 // and inside the app that pop-up took the keyboard away after one letter. The phone's saved details only
@@ -5372,7 +5432,7 @@ function go(screen){
   // camera can be opened at all; startCameraScan() picks the native
   // detector when it exists (Android, unchanged) and a JS decoder
   // fallback when it doesn't (iPhone).
-  if (screen === 'admin-redeem') document.getElementById('scan-camera-btn').style.display = (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? '' : 'none';
+  if (screen === 'admin-redeem') document.getElementById('scan-camera-btn').style.display = (nativePluginAvailable('InsydeScanner') || (navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) ? '' : 'none';
   if (screen !== 'venue' && momentViewObserver) momentViewObserver.disconnect();
   if (screen !== 'venue') closeAlbumViewer();
   if (screen !== 'crew-view'){
@@ -5982,7 +6042,7 @@ window.handleSignUp = async function(){
   // Site URL default) so the confirmation link lands on the correct
   // path on both GitHub Pages staging (sub-path) and Netlify
   // production (root) — see the same fix applied to resetPasswordForEmail.
-  const signupRedirectBase = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+  const signupRedirectBase = authRedirectBase();
   const signupCaptchaToken = await getCaptchaToken();
   const { data, error } = await supabase.auth.signUp({
     email, password,
@@ -6293,7 +6353,7 @@ window.handleResendConfirmation = async function(){
   if (!email){ toast('Enter your email above first'); return; }
   const resendBtn = document.getElementById('si-resend-confirmation');
   resendBtn.disabled = true; resendBtn.textContent = 'Sending…';
-  const resendRedirectBase = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+  const resendRedirectBase = authRedirectBase();
   const resendCaptchaToken = await getCaptchaToken();
   const { error } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: resendRedirectBase, ...(resendCaptchaToken ? { captchaToken: resendCaptchaToken } : {}) } });
   resendBtn.disabled = false; resendBtn.textContent = 'Resend confirmation email';
@@ -6306,7 +6366,7 @@ window.handleForgotPassword = async function(){
   // Use the current directory (not just the domain root) so this works on both
   // GitHub Pages staging (site lives in a sub-path, e.g. /Insydelive-/) and
   // Netlify production (site lives at the domain root) without hardcoding either.
-  const redirectBase = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+  const redirectBase = authRedirectBase();
   const resetCaptchaToken = await getCaptchaToken();
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectBase, ...(resetCaptchaToken ? { captchaToken: resetCaptchaToken } : {}) });
   toast(error ? friendlyAuthError(error.message) : 'Password reset email sent');
@@ -6492,7 +6552,7 @@ window.handleSafetySave = async function(){
     // this screen re-loads and clears watcher-link-result, so
     // navigating away right after creating it would wipe the link
     // before they ever got to see or copy it.
-    const link = `${window.location.origin}${window.location.pathname}?track=${token}`;
+    const link = `${shareBaseUrl()}?track=${token}`;
     const resultEl = document.getElementById('watcher-link-result');
     if (resultEl){
       resultEl.innerHTML = `
@@ -7074,8 +7134,9 @@ function dictCountry(code){ const f = COUNTRIES.find(c => c[0]===code); return f
 window.shareEntityProfile = async function(entityType, entityId, name){
   if (!entityId) return;
   const param = entityType === 'organizer' ? 'organizer' : 'venue';
-  const shareUrl = `${window.location.origin}${window.location.pathname}?${param}=${encodeURIComponent(entityId)}`;
+  const shareUrl = `${shareBaseUrl()}?${param}=${encodeURIComponent(entityId)}`;
   const shareData = { title: `${name || 'Check this out'} on InsydeLive`, text: `Check out ${name || 'this'} on InsydeLive, the nightlife social app`, url: shareUrl };
+  if (await nativeShare(shareData)) return;
   if (navigator.share){
     try { await navigator.share(shareData); return; } catch (e){ /* cancelled or unsupported — fall through to clipboard */ }
   }
@@ -7089,7 +7150,7 @@ window.shareEntityProfile = async function(entityType, entityId, name){
 
 window.shareVenue = async function(venueId){
   const venue = state.venues.find(v => v.id === venueId) || state.adminVenues.find(v => v.id === venueId);
-  const shareUrl = `${window.location.origin}${window.location.pathname}?venue=${venueId}`;
+  const shareUrl = `${shareBaseUrl()}?venue=${venueId}`;
   const shareData = {
     title: venue ? `${venue.name} on InsydeLive` : 'InsydeLive',
     text: venue ? `Check out ${venue.name} on InsydeLive, the nightlife social app` : 'Check this out on InsydeLive, the nightlife social app',
@@ -7101,6 +7162,7 @@ window.shareVenue = async function(venueId){
   // Web Share API isn't available on every browser (notably desktop Firefox
   // and older desktop Chrome) — fall back to copying the link instead of
   // just failing, so "share" always does something useful everywhere.
+  if (await nativeShare(shareData)) return;
   if (navigator.share){
     try { await navigator.share(shareData); return; } catch (e){ /* user cancelled or it failed — fall through to clipboard */ }
   }
@@ -7113,13 +7175,14 @@ window.shareVenue = async function(venueId){
 };
 
 window.shareEvent = async function(eventId, title){
-  const shareUrl = `${window.location.origin}${window.location.pathname}?event=${eventId}`;
+  const shareUrl = `${shareBaseUrl()}?event=${eventId}`;
   const shareData = {
     title: title ? `${title} on InsydeLive` : 'InsydeLive',
     text: title ? `Check out ${title} on InsydeLive, the nightlife social app` : 'Check this out on InsydeLive, the nightlife social app',
     url: shareUrl
   };
   supabase.rpc('increment_share_count', { p_target_type: 'event', p_target_id: eventId }).then(()=>{}, ()=>{});
+  if (await nativeShare(shareData)) return;
   if (navigator.share){
     try { await navigator.share(shareData); return; } catch (e){ /* user cancelled or it failed — fall through to clipboard */ }
   }
@@ -7157,13 +7220,14 @@ window.repostEvent = (eventId) => repostTarget('event', eventId);
 window.repostGoingOutSession = (sessionId) => repostTarget('going_out_session', sessionId);
 
 window.shareGoingOutSession = async function(sessionId, venueName){
-  const shareUrl = `${window.location.origin}${window.location.pathname}?going_out_session=${sessionId}`;
+  const shareUrl = `${shareBaseUrl()}?going_out_session=${sessionId}`;
   const shareData = {
     title: 'Selling tickets tonight on InsydeLive',
     text: venueName ? `Grab a ticket — going out tonight at ${venueName}` : 'Grab a ticket for tonight on InsydeLive',
     url: shareUrl
   };
   supabase.rpc('increment_share_count', { p_target_type: 'going_out_session', p_target_id: sessionId }).then(()=>{}, ()=>{});
+  if (await nativeShare(shareData)) return;
   if (navigator.share){
     try { await navigator.share(shareData); return; } catch (e){ /* user cancelled or it failed — fall through to clipboard */ }
   }
@@ -7368,6 +7432,7 @@ function renderExploreReposts(){
 }
 
 window.reactToRepost = async function(repostId, type, context){
+  haptic('light');
   if (!navigator.onLine){ toast('Connect to the internet to react'); return; }
   const userId = state.session.user.id;
   const { data: existing } = await supabase.from('repost_reactions').select('reaction_type').eq('repost_id', repostId).eq('user_id', userId).maybeSingle();
@@ -7888,6 +7953,7 @@ window.deleteMoment = async function(id){
 
 /* ---------- Reactions ---------- */
 window.reactToMoment = async function(momentId, type){
+  haptic('light');
   if (!navigator.onLine){ toast('Connect to the internet to react'); return; }
   const userId = state.session.user.id;
   const current = state.myMomentReactions[momentId];
@@ -8052,6 +8118,7 @@ function renderContextMomentsRow(containerId){
 window.renderContextMomentsRow = renderContextMomentsRow;
 
 window.reactToContextMoment = async function(momentId, type){
+  haptic('light');
   if (!navigator.onLine){ toast('Connect to the internet to react'); return; }
   const userId = state.session.user.id;
   const current = state.myContextMomentReactions[momentId];
@@ -8158,12 +8225,13 @@ window.shareMoment = async function(momentId){
   // that references the specific moment, rather than auto-opening that
   // exact post. Flagged here deliberately rather than silently simplified.
   const venue = state.currentVenue;
-  const shareUrl = `${window.location.origin}${window.location.pathname}?venue=${venue?.id || ''}`;
+  const shareUrl = `${shareBaseUrl()}?venue=${venue?.id || ''}`;
   const shareData = {
     title: 'InsydeLive',
     text: `Check out what's happening at ${venue?.name || 'this venue'} on InsydeLive, the nightlife social app, right now`,
     url: shareUrl
   };
+  if (await nativeShare(shareData)) return;
   if (navigator.share){
     try { await navigator.share(shareData); return; } catch (e){ /* cancelled or failed — fall through */ }
   }
@@ -8702,6 +8770,7 @@ window.checkIn = async function(venueId){
   }
 
   if (!res.queued){
+    haptic('success');
     toast('Checked in!');
     await loadVenueCheckins(venueId);
   } else {
@@ -10392,7 +10461,7 @@ window.notifActionTogglePref = function(){
    - Android app only: event listing fees, gathering creation fees and advertising requests are not sold
      inside the app (Google Play payments policy). Organisers use app.insydelive.com for those.
    ============================================================ */
-const PUBLIC_PAGES = ['privacy', 'terms', 'cookies', 'payouts-terms', 'delete-account', 'child-safety'];   // child-safety added 16 Oct
+const PUBLIC_PAGES = ['privacy', 'terms', 'cookies', 'payouts-terms', 'delete-account', 'child-safety', 'support'];   // child-safety added 16 Oct; support (Help & contact) added for the App Store
 function openPublicPageFromLink(){
   const page = new URLSearchParams(window.location.search).get('page');
   if (!page || !PUBLIC_PAGES.includes(page)) return;
@@ -10740,7 +10809,7 @@ window.submitChangeEmail = async function(){
     if (pwError){ fail(/captcha/i.test(pwError.message) ? friendlyAuthError(pwError.message) : 'Incorrect password.'); return; }
 
     // 2. ask Supabase to send the two confirmation links
-    const redirectBase = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+    const redirectBase = authRedirectBase();
     const { error } = await supabase.auth.updateUser({ email: newEmail }, { emailRedirectTo: redirectBase });
     if (error){
       fail(/already|registered|exists/i.test(error.message) ? 'That email is already used by another account.' : friendlyAuthError(error.message));
@@ -11595,6 +11664,7 @@ window.deleteProfilePost = async function(id, context){
 };
 
 window.reactToPost = async function(postId, type, context){
+  haptic('light');
   if (!navigator.onLine){ toast('Connect to the internet to react'); return; }
   const userId = state.session.user.id;
   const { data: existing } = await supabase.from('profile_post_reactions').select('reaction_type').eq('post_id', postId).eq('user_id', userId).maybeSingle();
@@ -11668,6 +11738,7 @@ window.openPostDetail = async function(postId, returnScreen){
 };
 
 window.reactToComment = async function(commentId, type){
+  haptic('light');
   if (!navigator.onLine){ toast('Connect to the internet to react'); return; }
   const userId = state.session.user.id;
   const { data: existing } = await supabase.from('profile_post_comment_reactions').select('reaction_type').eq('comment_id', commentId).eq('user_id', userId).maybeSingle();
@@ -12023,6 +12094,7 @@ window.deleteEntityPost = async function(id, entityType, entityId, context){
 };
 
 window.reactToEntityPost = async function(postId, type, context){
+  haptic('light');
   if (!navigator.onLine){ toast('Connect to the internet to react'); return; }
   const userId = state.session.user.id;
   const { data: existing } = await supabase.from('entity_post_reactions').select('reaction_type').eq('post_id', postId).eq('user_id', userId).maybeSingle();
@@ -12096,6 +12168,7 @@ window.openEntityPostDetail = async function(postId, returnContext){
 };
 
 window.reactToEntityComment = async function(commentId, type){
+  haptic('light');
   if (!navigator.onLine){ toast('Connect to the internet to react'); return; }
   const userId = state.session.user.id;
   const { data: existing } = await supabase.from('entity_post_comment_reactions').select('reaction_type').eq('comment_id', commentId).eq('user_id', userId).maybeSingle();
@@ -12342,8 +12415,9 @@ window.toggleFollowOnProfile = async function(){
 
 window.shareUserProfile = async function(username){
   if (!username){ toast('Could not build your profile link — try again in a moment'); return; }
-  const shareUrl = `${window.location.origin}${window.location.pathname}?u=${encodeURIComponent(username)}`;
+  const shareUrl = `${shareBaseUrl()}?u=${encodeURIComponent(username)}`;
   const shareData = { title: `@${username} on InsydeLive`, text: `Check out @${username} on InsydeLive, the nightlife social app`, url: shareUrl };
+  if (await nativeShare(shareData)) return;
   if (navigator.share){
     try { await navigator.share(shareData); return; } catch (e){ /* cancelled or unsupported — fall through to clipboard */ }
   }
@@ -14398,6 +14472,17 @@ window.redeemCode = async function(){
   }
 };
 
+// v2.4.6: a short vibration in the apps when a code is accepted (green tick) or refused.
+{
+  const redeemCodeBase = window.redeemCode;
+  window.redeemCode = async function(){
+    const box = document.getElementById('redeem-result');
+    const before = box ? box.innerHTML : '';
+    await redeemCodeBase();
+    if (box && box.innerHTML && box.innerHTML !== before) haptic(box.innerHTML.includes('var(--success)') ? 'success' : 'error');
+  };
+}
+
 async function tryRedeemAsTicket(code, resultBox, codeInput){
   const { data, error } = await supabase.rpc('redeem_event_ticket', { p_code: code });
   if (error || !data || !data[0]){
@@ -14490,6 +14575,21 @@ function loadJsQR(){
 }
 
 window.startCameraScan = async function(){
+  // v2.4.6: in the iPhone app, Apple's own camera scanner (InsydeScanner plugin) instead of the web camera.
+  if (nativePluginAvailable('InsydeScanner')){
+    try {
+      const r = await window.Capacitor.Plugins.InsydeScanner.scan();
+      if (r && r.value){
+        document.getElementById('redeem-code-input').value = String(r.value).toUpperCase();
+        redeemCode();
+      }
+    } catch (e){
+      const m = (e && e.message) || '';
+      if (/denied/i.test(m)) toast('Camera access is off for InsydeLive — turn it on in your iPhone Settings, then try again');
+      else if (!/cancel/i.test(m)) toast('Could not open the camera — enter the code manually instead');
+    }
+    return;
+  }
   const hasNativeDetector = 'BarcodeDetector' in window;
   const video = document.getElementById('scan-video');
   try {
@@ -15717,6 +15817,7 @@ window.checkInToGathering = async function(gatheringId){
   });
   if (error){ toast(error.message?.includes('You need to be at the gathering') ? error.message : 'Could not check in'); return; }
   state.myActiveGatheringCheckins.add(gatheringId);
+  haptic('success');
   toast("Checked in — have a great time!");
   renderGatheringInvitesList();
 };
@@ -15746,6 +15847,7 @@ window.checkInToEvent = async function(eventId){
   const { error } = await supabase.from('event_checkins').insert({ event_id: eventId, user_id: state.session.user.id, latitude: lat, longitude: lng });
   if (error){ toast(error.message?.includes('You need to be at the event') ? error.message : 'Could not check in'); return; }
   state.myActiveEventCheckins.add(eventId);
+  haptic('success');
   toast("Checked in — have a great time!");
   renderVenueTabContent(state.currentVenue, state.currentCheckins, null);
 };
@@ -16236,7 +16338,7 @@ window.generateWatcherLink = async function(){
   });
   if (error){ toast('Could not generate link'); return; }
 
-  const link = `${window.location.origin}${window.location.pathname}?track=${token}`;
+  const link = `${shareBaseUrl()}?track=${token}`;
   const resultEl = document.getElementById('watcher-link-result');
   resultEl.innerHTML = `
     <div class="card stack" style="margin-top:8px;">
@@ -23867,7 +23969,8 @@ async function loadReferralCount(){
 }
 
 window.shareReferralLink = async function(){
-  const link = `${window.location.origin}${window.location.pathname}?ref=${encodeURIComponent(state.profile?.username || '')}`;
+  const link = `${shareBaseUrl()}?ref=${encodeURIComponent(state.profile?.username || '')}`;
+  if (await nativeShare({ title: 'Join me on InsydeLive', text: "Join me on InsydeLive, the nightlife social app. See who's inside.", url: link })) return;
   if (navigator.share){
     try { await navigator.share({ title: 'Join me on InsydeLive', text: "Join me on InsydeLive, the nightlife social app. See who's inside.", url: link }); return; }
     catch(e) { /* user cancelled the share sheet — fall through to clipboard */ }
