@@ -1041,7 +1041,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
         <div class="field"><label>Check-in duration (hours)</label><input class="input" id="concert-checkin-duration" type="number" min="1" max="24" value="8"></div>
         <div class="field"><label>Total ticket cap (optional)</label><input class="input" id="concert-ticket-capacity" type="number" min="1" placeholder="Leave blank for unlimited"></div>
         <p class="small" style="color:var(--text-faint);">Caps how many tickets can be sold across every tier combined — for keeping sales within the venue's real capacity. A tier's own quantity limit still applies on top of this.</p>
-        <p class="small">InsydeLive takes a 5% commission, and your payment gateway (Stripe or Paystack) takes its own processing fee on top — both come out of this price before payout. Set your price with that in mind.</p>
+        <p class="small">InsydeLive takes a 1.5% commission, and your payment gateway (Stripe or Paystack) takes its own processing fee on top — both come out of this price before payout. Set your price with that in mind.</p>
         <div class="field"><label>Ticket link (optional)</label><input class="input" id="concert-ticket-url" placeholder="https://..."></div>
         <div class="field">
           <label>Ticket tiers (optional — leave empty to just use the flat price above)</label>
@@ -2226,7 +2226,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
 
           <div class="card stack">
             <h3 style="margin:0;font-size:15px;">Venue event listing fee</h3>
-            <p class="small">Symbolic only — applies to free venue events only. Paid events earn an 85/15 venue/platform commission instead, so this doesn't stack on top.</p>
+            <p class="small">Symbolic only — applies to free venue events only. Paid events earn InsydeLive's 1.5% commission instead, so this doesn't stack on top.</p>
             <div class="pref-row">
               <div><div class="pref-label">Enforce fee</div></div>
               <label class="switch"><input type="checkbox" id="venue-listing-fee-enabled" onchange="updateVenueListingFeeSetting()"><span class="track"><span class="thumb"></span></span></label>
@@ -2244,7 +2244,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
 
           <div class="card stack">
             <h3 style="margin:0;font-size:15px;">Organizer event listing fee</h3>
-            <p class="small">Symbolic only — applies to free organizer events only. Paid events earn a 70/15/15 or 85/15 commission instead, so this doesn't stack on top.</p>
+            <p class="small">Symbolic only — applies to free organizer events only. Paid events earn InsydeLive's 1.5% commission instead, so this doesn't stack on top.</p>
             <div class="pref-row">
               <div><div class="pref-label">Enforce fee</div></div>
               <label class="switch"><input type="checkbox" id="organizer-listing-fee-enabled" onchange="updateOrganizerListingFeeSetting()"><span class="track"><span class="thumb"></span></span></label>
@@ -2737,7 +2737,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
         <p class="small">A live view of the total price is always shown before you pay, including our commission and the payment processor's own fee (Section 6). Payment is confirmed only once our payment processor confirms the charge succeeded — not merely when you tap "pay" — so if your connection drops before that confirmation, no ticket, gift, or fee payment is created and you should check your payment history before trying again.</p>
 
         <h2>6. Platform commission and payment processor fees</h2>
-        <p class="small">InsydeLive retains a 5% commission on ticket sales, venue gifts, gathering attendance payments, and food and drink orders. Cash gifts sent to a gathering host, and tips sent to a waiter, carry no InsydeLive commission — the recipient receives the full amount, minus only the real fee charged by the payment processor. Gathering creation fees, event listing fees, and advertising payments are retained in full by InsydeLive, as they are fees for using the platform itself rather than payments passed on to another user.</p>
+        <p class="small">InsydeLive retains a 1.5% commission on event ticket sales, venue gifts, gathering attendance payments, and food and drink orders, and a 3.5% commission on "I'm going out" tickets sold by one member to another. Cash gifts sent to a gathering host, and tips sent to a waiter, carry no InsydeLive commission — the recipient receives the full amount, minus only the real fee charged by the payment processor. Gathering creation fees, event listing fees, and advertising payments are retained in full by InsydeLive, as they are fees for using the platform itself rather than payments passed on to another user.</p>
         <p class="small">In every case, the actual processing fee charged by Stripe or Paystack (which varies by card type, region, and processor) is also deducted before any amount is paid out to a host, organizer, or venue. This fee is set by our payment processors, not by InsydeLive, and can change if they change their pricing.</p>
 
         <h2>7. Advertising requests</h2>
@@ -2767,6 +2767,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
 
         <h2>14. Contact</h2>
         <p class="small">Questions about these terms: <strong>legal@insydelive.com</strong></p>
+        <p class="small" style="color:var(--text-faint);">Last updated <span class="legal-updated">21 October 2026</span></p>
         <p class="small" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);color:var(--text-faint);font-size:12px;">InsydeLive Limited · Registered in England and Wales · Company number 17380805 · Registered office: Suite Ra01, 195-197 Wood Street, Wood Street, London, England, E17 3NU</p>
       </div>
     </div>
@@ -3387,7 +3388,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
           <p class="small" id="gth-payout-status-note">—</p>
           <div class="field"><label>Price per guest</label><input class="input" id="gth-attendance-price" type="text" inputmode="decimal" placeholder="Leave blank for free" oninput="formatPriceInput(this)"></div>
           <div class="field"><label>Check-in duration (hours)</label><input class="input" id="gth-checkin-duration" type="number" min="1" max="24" value="8"></div>
-          <p class="small">InsydeLive takes a 5% commission, and the payment gateway takes its own processing fee on top — both come out of this price before you're paid.</p>
+          <p class="small">InsydeLive takes a 1.5% commission, and the payment gateway takes its own processing fee on top — both come out of this price before you're paid.</p>
           <div class="field"><label>Currency</label>
             <input class="input" id="gth-attendance-currency-search" placeholder="Search currency..." autocomplete="off"
               oninput="filterCurrencySuggestions('gth-attendance-currency-search','gth-attendance-currency-suggestions','gth-attendance-currency')"
@@ -3651,7 +3652,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
         <div class="field"><label>Starts at</label><input class="input" id="go-start-time" type="datetime-local"></div>
         <div class="field"><label>Ends at</label><input class="input" id="go-end-time" type="datetime-local"></div>
         <p class="small" style="color:var(--text-faint);">Must start within the next 24 hours, and run for under 12 hours — buyers get a reminder 2 hours before it starts.</p>
-        <p class="small" style="color:var(--text-faint);">InsydeLive takes 10%, and the payment processor's own transaction fee also comes off the top — same as any card payment. What's left is yours. Tickets aren't individually refundable — only cancelling the whole thing refunds everyone (minus the processor fee). Getting people in is a separate arrangement between you and the venue — make sure that's sorted before you sell.</p>
+        <p class="small" style="color:var(--text-faint);">InsydeLive takes 3.5%, and the payment processor's own transaction fee also comes off the top — same as any card payment. What's left is yours. Tickets aren't individually refundable — only cancelling the whole thing refunds everyone (minus the processor fee). Getting people in is a separate arrangement between you and the venue — make sure that's sorted before you sell.</p>
         <button class="btn-sm btn-ghost" onclick="closeGoingOutModal(); openPayoutDetailsScreen('self', null);">Set up payout account</button>
       </div>
       <div class="stack">
@@ -3836,7 +3837,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
       <div class="field"><label>Check-in duration (hours)</label><input class="input" id="ev-checkin-duration" type="number" min="1" max="24" value="8"></div>
       <div class="field"><label>Total ticket cap (optional)</label><input class="input" id="ev-ticket-capacity" type="number" min="1" placeholder="Leave blank for unlimited"></div>
       <p class="small" style="color:var(--text-faint);">Caps how many tickets can be sold across every tier combined — for keeping sales within the venue's real capacity. A tier's own quantity limit still applies on top of this.</p>
-      <p class="small">InsydeLive takes a 5% commission, and your payment gateway (Stripe or Paystack) takes its own processing fee on top — both come out of this price before payout. Set your price with that in mind.</p>
+      <p class="small">InsydeLive takes a 1.5% commission, and your payment gateway (Stripe or Paystack) takes its own processing fee on top — both come out of this price before payout. Set your price with that in mind.</p>
       <div class="field">
         <label>Ticket tiers (optional — leave empty to just use the flat price above)</label>
         <div class="stack" id="ev-tiers-list" style="margin-bottom:8px;"></div>
@@ -4507,7 +4508,7 @@ setInterval(async () => {
      does not (two tries, 3 s apart). It re-checks every 30 s and reloads the app once we are back.
    ============================================================ */
 // The app version shown in Settings. Must match CACHE_VERSION in sw.js (the release packaging checks this).
-const APP_VERSION = '2.4.6';
+const APP_VERSION = '2.4.7';
 { const v = document.getElementById('app-version-label'); if (v) v.textContent = APP_VERSION; }
 // Phone autofill (14 Oct 2026): Android offered a saved home address ("Home, Wantage") on boxes like Bio,
 // and inside the app that pop-up took the keyboard away after one letter. The phone's saved details only
@@ -15518,7 +15519,7 @@ window.saveGathering = async function(){
   }
 
   // Creation fee — only for genuinely free gatherings. A paid gathering
-  // already earns the platform its 5% commission on attendance, so it
+  // already earns the platform its 1.5% commission on attendance, so it
   // shouldn't also be charged a flat listing fee on top of that.
   const feeOwed = !state.editingGatheringId && isFreeGathering && state.platformSettings?.gathering_creation_fee?.enabled;
 
