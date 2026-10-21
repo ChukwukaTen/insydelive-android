@@ -2760,7 +2760,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, select:focus-vi
         <p class="small">The optional emergency contact info you can add in Profile → Safety is for your own reference and is only shared with anyone else if you choose to press the SOS button. SOS notifies people currently at the same venue as you and opens a pre-written text to your emergency contact on your own phone — it is a best-effort tool, not a monitoring service, and does not replace calling emergency services directly if you're in immediate danger. We cannot guarantee anyone will see or respond to an SOS alert in time.</p>
 
         <h2>12. Liability</h2>
-        <p class="small">InsydeLive is provided "as is." To the extent permitted by law, we're not liable for what happens at a venue, between users, or as a result of connections made through the app. We're also not liable for delays, failures, or errors caused by our payment processors, Stripe or Paystack, that are outside our reasonable control. This section in particular needs a qualified lawyer's review before launch — liability language, especially around payments, is jurisdiction-specific and what's written here is not a substitute for that review.</p>
+        <p class="small">InsydeLive is provided "as is." To the extent permitted by law, we're not liable for what happens at a venue, between users, or as a result of connections made through the app. We're also not liable for delays, failures, or errors caused by our payment processors, Stripe or Paystack, that are outside our reasonable control.</p>
 
         <h2>13. Changes</h2>
         <p class="small">We may update these terms as the app changes. Material changes will be reflected here with an updated date.</p>
@@ -19353,6 +19353,7 @@ window.openMyReceiptDetail = async function(i){
   document.getElementById('receipt-detail-body').innerHTML = `
     <p style="font-size:26px;font-weight:800;margin:0;${refunded ? 'text-decoration:line-through;color:var(--text-faint);' : ''}">${currencySymbol(r.currency)}${formatMoney(r.amount_minor / 100)}</p>
     ${refunded ? `<span class="pill" style="color:var(--danger);margin-top:8px;display:inline-block;">Refunded</span><p class="small" id="receipt-detail-reason" style="color:var(--text-faint);margin-top:6px;">Loading reason…</p>` : ''}
+    <div id="receipt-detail-tiers"></div>
     <table style="width:100%;font-size:14px;border-collapse:collapse;margin-top:14px;">
       <tr><td style="padding:6px 0;color:var(--text-faint);">Sold by</td><td style="padding:6px 0;text-align:right;font-weight:600;">${escapeHtml(r.seller_name)}</td></tr>
       <tr><td style="padding:6px 0;color:var(--text-faint);">Type</td><td style="padding:6px 0;text-align:right;">${escapeHtml(MY_RECEIPTS_PURPOSE_LABEL[r.purpose] || r.purpose)}</td></tr>
@@ -19361,6 +19362,61 @@ window.openMyReceiptDetail = async function(i){
     ${(!refunded && (r.purpose === 'ticket_purchase' || r.purpose === 'event')) ? `<button class="btn btn-secondary btn-sm" style="margin-top:14px;" onclick="closeReceiptDetailModal(); go('my-tickets');">View ticket</button>` : ''}
   `;
   document.getElementById('receiptDetailModal').classList.add('show');
+
+  // v2.4.7: an event ticket purchase shows each tier (qty × price). Read from the buyer's own
+  // tickets for this payment. Shown only when they add up to the receipt total, so a purchase
+  // where a ticket was later sent to someone else just shows the total, as before.
+  state.receiptDetailOpenId = r.id;
+  if ((r.purpose === 'ticket_purchase' || r.purpose === 'event') && r.payment_session_id){
+    try {
+      const { data: tix } = await supabase.from('event_tickets')
+        .select('price, ticket_type_id, purchased_at')
+        .eq('payment_session_id', r.payment_session_id)
+        .order('purchased_at', { ascending: true });
+      const rows = tix || [];
+      const sumMinor = rows.reduce((t, x) => t + Math.round(Number(x.price || 0) * 100), 0);
+      const tiersEl = document.getElementById('receipt-detail-tiers');
+      if (rows.length && sumMinor === Number(r.amount_minor) && tiersEl && state.receiptDetailOpenId === r.id){
+        const typeIds = [...new Set(rows.map(x => x.ticket_type_id).filter(Boolean))];
+        const names = {};
+        if (typeIds.length){
+          const { data: types } = await supabase.from('event_ticket_types').select('id, name').in('id', typeIds);
+          (types || []).forEach(t => { names[t.id] = t.name; });
+        }
+        if (state.receiptDetailOpenId !== r.id) return; // another receipt was opened meanwhile
+        const groups = new Map();
+        rows.forEach(x => {
+          const unit = Number(x.price || 0);
+          const key = (x.ticket_type_id || 'none') + '|' + unit;
+          if (!groups.has(key)) groups.set(key, { name: (x.ticket_type_id && names[x.ticket_type_id]) || 'Ticket', qty: 0, unit });
+          groups.get(key).qty += 1;
+        });
+        const sym = currencySymbol(r.currency);
+        const lines = [...groups.values()].map(g => `
+          <tr>
+            <td style="padding:7px 0;font-weight:600;border-bottom:1px solid var(--border);">${escapeHtml(g.name)}</td>
+            <td style="padding:7px 0;text-align:right;color:var(--text-faint);white-space:nowrap;border-bottom:1px solid var(--border);">${g.qty} × ${sym}${formatMoney(g.unit)}</td>
+            <td style="padding:7px 0 7px 10px;text-align:right;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border);">${sym}${formatMoney(Math.round(g.qty * g.unit * 100) / 100)}</td>
+          </tr>`).join('');
+        tiersEl.innerHTML = `
+          <p class="small" style="margin:2px 0 0;color:var(--text-faint);">${rows.length} ticket${rows.length === 1 ? '' : 's'}</p>
+          <div style="background:var(--bg-card);border-radius:var(--radius-md);padding:6px 14px;margin-top:12px;">
+            <table class="receipt-tiers" style="width:100%;font-size:14px;border-collapse:collapse;">${lines}</table>
+          </div>`;
+        const lastRow = tiersEl.querySelector('.receipt-tiers tr:last-child');
+        if (lastRow) lastRow.querySelectorAll('td').forEach(td => { td.style.borderBottom = '0'; });
+        // Older receipts were titled "4x Event name"; the count is now shown above the tiers.
+        const titleEl = document.getElementById('receipt-detail-title');
+        if (titleEl) titleEl.textContent = titleEl.textContent.replace(/^\d+x\s+/, '');
+        if (rows.length > 1){
+          const btn = document.querySelector('#receipt-detail-body button.btn-secondary');
+          if (btn) btn.textContent = 'View tickets';
+        }
+      }
+    } catch (e) {
+      console.warn('Receipt breakdown unavailable:', e);
+    }
+  }
 
   // Fetched lazily, only for refunded receipts, rather than joining
   // this into the main list query for every row — the reason lives on
